@@ -1,0 +1,185 @@
+<resources>
+    <string name="app_name">FurFlix</string>
+
+    <!-- Navigation tabs -->
+    <string name="nav_tab_browse">Browse</string>
+    <string name="nav_tab_latest">Latest</string>
+    <string name="nav_tab_search">Search</string>
+    <string name="nav_tab_profile">Profile</string>
+
+    <!-- Common actions -->
+    <string name="action_cancel">Cancel</string>
+    <string name="action_back">Back</string>
+    <string name="action_favorite">Favorite</string>
+
+    <!-- Content descriptions -->
+    <string name="cd_download">Download</string>
+    <string name="cd_share">Share</string>
+
+    <!-- Search -->
+
+    <!-- Filter labels -->
+
+    <!-- Post detail -->
+
+    <!-- User profile -->
+
+    <!-- Profile tabs -->
+
+    <!-- States -->
+
+    <!-- Species picker -->
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_account">Account</string>
+    <string name="settings_general">General</string>
+    <string name="settings_storage">Storage</string>
+    <string name="settings_appearance">Appearance</string>
+    <string name="settings_about">About</string>
+    <string name="settings_appearance_desc">Themes, colors, and layout</string>
+    <string name="settings_theme">Theme</string>
+
+    <string name="theme_default">Default</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_cherry_blossom">Cherry Blossom</string>
+    <string name="theme_mint_fresh">Mint Fresh</string>
+    <string name="theme_gold">Gold</string>
+    <string name="theme_pride">Pride</string>
+    <string name="theme_neon_galaxy">Neon Galaxy</string>
+    <string name="theme_summer_sky">Summer Sky</string>
+    <string name="theme_dark">Dark</string>
+
+    <string name="settings_grid_view">Grid view</string>
+    <string name="settings_list_view">List view</string>
+    <string name="settings_view_desc">Browse submissions as a grid or a compact list.</string>
+    <string name="settings_app_icon">App Icon</string>
+
+    <!-- About Developer -->
+    <string name="about_developer_title">About Developer</string>
+    <string name="about_dev_role">FurFlix Creator &amp; Developer</string>
+    <string name="about_dev_bio">Developed with ❤️ in Ukraine 🇺🇦\nIf you enjoy FurFlix and want to support the project (or just help me save up for a fursuit! 🐾), consider leaving a tip!</string>
+    <string name="about_connect">Connect</string>
+    <string name="about_support">Support the Project</string>
+    <string name="about_card_monobank">Monobank</string>
+    <string name="about_card_monobank_sub">Google Pay</string>
+    <string name="about_card_monobank_number">4874 1000 3088 2800</string>
+    <string name="about_btn_donate">Donate</string>
+    <string name="about_btn_copy">Copy Address</string>
+    <string name="about_copied_toast">%s copied to clipboard!</string>
+    <string name="about_telegram">Telegram</string>
+    <string name="about_twitter">Twitter</string>
+
+    <!-- Settings General -->
+    <string name="settings_image_cache">Image Cache</string>
+    <string name="settings_clearing">Clearing…</string>
+    <string name="settings_downloads_folder">Downloads Folder</string>
+    <string name="settings_filters_content">Filters &amp; Content</string>
+    <string name="settings_filters_desc">Content hiding and blacklists.</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_language_desc">App interface language</string>
+    <string name="settings_about_desc">Unofficial FurAffinity client</string>
+    
+    <!-- Settings Download Dialog -->
+    <string name="settings_download_dialog_title">Download Folder</string>
+    <string name="settings_download_base_dir">Base Directory</string>
+    <string name="settings_download_pictures">Pictures</string>
+    <string name="settings_download_downloads">Downloads</string>
+    <string name="settings_download_dcim">DCIM</string>
+    <string name="settings_download_subfolder">Subfolder Name</string>
+    <string name="settings_download_path_preview">Save to: %s</string>
+    <string name="action_save">Save</string>
+    <!-- Extra missing translations -->
+    <string name="profile_favorites">Favorites</string>
+    <string name="profile_watchlist">Watchlist</string>
+    
+    <string name="post_view_profile">Profile</string>
+    <string name="post_description">Description</string>
+    <string name="post_meta_info">Meta Info</string>
+    <string name="post_comments">Comments</string>
+    
+    <string name="user_watching">Watching</string>
+    <string name="user_watch">Watch</string>
+    <string name="user_gallery">Gallery</string>
+    <string name="user_watchers">Watchers</string>
+    
+    <!-- Search Filters -->
+    <string name="search_filters">Filters</string>
+    <string name="search_clear_all">Clear All</string>
+    <string name="filter_rating">Rating</string>
+    <string name="filter_general">General</string>
+    <string name="filter_mature">Mature</string>
+    <string name="filter_adult">Adult</string>
+    
+    <string name="filter_match_mode">Tag Match Mode</string>
+    <string name="filter_require_all">Require all</string>
+    <string name="filter_require_any">Require any</string>
+    <string name="filter_advanced">FA syntax</string>
+    
+    <string name="filter_order_by">Order By</string>
+    <string name="filter_sort_date">Date</string>
+    <string name="filter_sort_relevancy">Relevancy</string>
+    <string name="filter_sort_popularity">Popularity</string>
+    
+    <string name="filter_sort_direction">Sort Direction</string>
+    <string name="filter_dir_desc">Descending</string>
+    <string name="filter_dir_asc">Ascending</string>
+    
+    <string name="filter_time_range">Time Range</string>
+    <string name="filter_time_1d">1 Day</string>
+    <string name="filter_time_3d">3 Days</string>
+    <string name="filter_time_1w">1 Week</string>
+    <string name="filter_time_1m">1 Month</string>
+    <string name="filter_time_1y">1 Year</string>
+    <string name="filter_time_3y">3 Years</string>
+    <string name="filter_time_5y">5 Years</string>
+    <string name="filter_time_all">All Time</string>
+    
+    <string name="filter_content_type">Content Type</string>
+    <string name="filter_type_art">Art</string>
+    <string name="filter_type_flash">Flash</string>
+    <string name="filter_type_photo">Photo</string>
+    <string name="filter_type_music">Music</string>
+    <string name="filter_type_story">Story</string>
+    <string name="filter_type_poetry">Poetry</string>
+
+    
+    <string name="profile_following_list">Following</string>
+    <string name="profile_followers_list">Followers</string>
+    <string name="nav_tab_downloads">Downloads</string>
+    
+    <string name="search_hint">Search or # for tags...</string>
+    <string name="search_recent">Recent Searches</string>
+    <string name="search_clear_recent">Clear</string>
+    <string name="search_furaffinity">Search FurAffinity</string>
+    
+    <string name="profile_about">About me</string>
+    <string name="profile_show_more">Show more</string>
+    <string name="profile_show_less">Show less</string>
+    
+    <string name="downloads_empty_title">No downloads yet</string>
+    <string name="downloads_empty_desc">Your saved artwork will appear here.</string>
+    <string name="settings_filters_live_preview">Live Preview</string>
+    <string name="settings_filters_live_preview_desc">Add filters below to see them disappear.</string>
+    <string name="settings_filters_all_hidden">All posts hidden</string>
+    <string name="settings_filters_muted_words">Muted Words in Title</string>
+    <string name="settings_filters_muted_words_desc">Posts with these words in their title will be hidden.</string>
+    <string name="settings_filters_muted_words_placeholder">e.g., YCH, Commission, Adopt</string>
+    <string name="meta_resolution">Resolution</string>
+    <string name="meta_file_size">File Size</string>
+    <string name="meta_file_type">File Type</string>
+    <string name="meta_date">Date</string>
+    
+    <string name="settings_not_logged_in">Not logged in</string>
+    <string name="settings_login_to_furaffinity">Login to FurAffinity</string>
+    <string name="login_sign_in">Sign in to FurAffinity</string>
+    <string name="home_not_logged_in">Not logged in. Some content may be unavailable.</string>
+    <string name="settings_startup_tab">Default Startup Tab</string>
+    <string name="settings_startup_tab_desc">Choose which tab opens when you launch the app</string>
+
+    <string name="login_title">Login</string>
+    <string name="login_username">Username</string>
+    <string name="login_password">Password</string>
+    <string name="login_button">Sign In</string>
+    <string name="login_browser">Sign in via browser</string>
+</resources>

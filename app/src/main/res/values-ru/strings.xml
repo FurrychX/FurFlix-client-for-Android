@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">FurFlix</string>
+
+    <string name="nav_tab_browse">Лента</string>
+    <string name="nav_tab_latest">Новое</string>
+    <string name="nav_tab_search">Поиск</string>
+    <string name="nav_tab_profile">Профиль</string>
+
+    <string name="action_cancel">Отмена</string>
+    <string name="action_back">Назад</string>
+    <string name="action_favorite">В избранное</string>
+
+    <string name="cd_download">Скачать</string>
+    <string name="cd_share">Поделиться</string>
+
+    <string name="settings_title">Настройки</string>
+    <string name="settings_account">Аккаунт</string>
+    <string name="settings_general">Основные</string>
+    <string name="settings_storage">Память</string>
+    <string name="settings_appearance">Внешний вид</string>
+    <string name="settings_about">О приложении</string>
+    <string name="settings_appearance_desc">Темы, цвета и отображение</string>
+    <string name="settings_theme">Тема</string>
+
+    <string name="theme_default">По умолчанию</string>
+    <string name="theme_light">Светлая</string>
+    <string name="theme_cherry_blossom">Сакура</string>
+    <string name="theme_mint_fresh">Свежая мята</string>
+    <string name="theme_gold">Золотая</string>
+    <string name="theme_pride">Прайд</string>
+    <string name="theme_neon_galaxy">Неоновая галактика</string>
+    <string name="theme_summer_sky">Летнее небо</string>
+    <string name="theme_dark">Тёмная</string>
+
+    <string name="settings_grid_view">Вид сеткой</string>
+    <string name="settings_list_view">Вид списком</string>
+    <string name="settings_view_desc">Отображать посты сеткой или компактным списком.</string>
+    <string name="settings_app_icon">Иконка приложения</string>
+
+    <string name="about_developer_title">О разработчике</string>
+    <string name="about_dev_role">Создатель и разработчик FurFlix</string>
+    <string name="about_dev_bio">Сделано с ❤️ в Украине 🇺🇦\nЕсли вам нравится FurFlix и вы хотите поддержать проект (или просто помочь мне накопить на фурсьют! 🐾), можете оставить чаевые!</string>
+    <string name="about_connect">Связь</string>
+    <string name="about_support">Поддержать проект</string>
+    <string name="about_card_monobank">Monobank</string>
+    <string name="about_card_monobank_sub">Google Pay</string>
+    <string name="about_card_monobank_number">4874 1000 3088 2800</string>
+    <string name="about_btn_donate">Задонатить</string>
+    <string name="about_btn_copy">Копировать адрес</string>
+    <string name="about_copied_toast">%s скопировано в буфер обмена!</string>
+    <string name="about_telegram">Telegram</string>
+    <string name="about_twitter">Twitter</string>
+
+    <string name="settings_image_cache">Кэш изображений</string>
+    <string name="settings_clearing">Очистка…</string>
+    <string name="settings_downloads_folder">Папка для загрузок</string>
+    <string name="settings_filters_content">Фильтры и контент</string>
+    <string name="settings_filters_desc">Управление заблокированными словами и фильтрация.</string>
+    <string name="settings_language">Язык</string>
+    <string name="settings_language_desc">Язык интерфейса приложения</string>
+    <string name="settings_about_desc">Неофициальный клиент FurAffinity</string>
+    
+    <string name="settings_download_dialog_title">Выберите папку для скачивания</string>
+    <string name="settings_download_base_dir">Базовая папка</string>
+    <string name="settings_download_pictures">Изображения (Pictures)</string>
+    <string name="settings_download_downloads">Загрузки (Downloads)</string>
+    <string name="settings_download_dcim">Камера (DCIM)</string>
+    <string name="settings_download_subfolder">Имя подпапки</string>
+    <string name="settings_download_path_preview">Картинки будут сохраняться в: %s</string>
+    <string name="action_save">Сохранить</string>
+    <!-- Extra missing translations -->
+    <string name="profile_favorites">Избранное</string>
+    <string name="profile_watchlist">Отслеживаемые</string>
+    
+    <string name="post_view_profile">Профиль</string>
+    <string name="post_description">Описание</string>
+    <string name="post_meta_info">Мета-инфо</string>
+    <string name="post_comments">Комментарии</string>
+    
+    <string name="user_watching">Отслеживаешь</string>
+    <string name="user_watch">Следить</string>
+    <string name="user_gallery">Галерея</string>
+    <string name="user_watchers">Подписчики</string>
+    
+    <!-- Search Filters -->
+    <string name="search_filters">Фильтры</string>
+    <string name="search_clear_all">Сбросить</string>
+    <string name="filter_rating">Возрастной рейтинг</string>
+    <string name="filter_general">Для всех</string>
+    <string name="filter_mature">Подросткам</string>
+    <string name="filter_adult">Взрослым</string>
+    
+    <string name="filter_match_mode">Режим совпадения</string>
+    <string name="filter_require_all">Требовать все теги</string>
+    <string name="filter_require_any">Хотя бы один тег</string>
+    <string name="filter_advanced">Синтаксис FA</string>
+    
+    <string name="filter_order_by">Сортировка</string>
+    <string name="filter_sort_date">По дате</string>
+    <string name="filter_sort_relevancy">По релевантности</string>
+    <string name="filter_sort_popularity">По популярности</string>
+    
+    <string name="filter_sort_direction">Порядок</string>
+    <string name="filter_dir_desc">По убыванию</string>
+    <string name="filter_dir_asc">По возрастанию</string>
+    
+    <string name="filter_time_range">Период времени</string>
+    <string name="filter_time_1d">1 день</string>
+    <string name="filter_time_3d">3 дня</string>
+    <string name="filter_time_1w">1 неделя</string>
+    <string name="filter_time_1m">1 месяц</string>
+    <string name="filter_time_1y">1 год</string>
+    <string name="filter_time_3y">3 года</string>
+    <string name="filter_time_5y">5 лет</string>
+    <string name="filter_time_all">За всё время</string>
+    
+    <string name="filter_content_type">Тип контента</string>
+    <string name="filter_type_art">Арт</string>
+    <string name="filter_type_flash">Флеш</string>
+    <string name="filter_type_photo">Фото</string>
+    <string name="filter_type_music">Музыка</string>
+    <string name="filter_type_story">История</string>
+    <string name="filter_type_poetry">Поэзия</string>
+
+    <string name="profile_following_list">Отслеживаемые</string>
+    <string name="profile_followers_list">Подписчики</string>
+    <string name="nav_tab_downloads">Загрузки</string>
+    
+    <string name="search_hint">Поиск или используйте # для тегов...</string>
+    <string name="search_recent">Недавние поиски</string>
+    <string name="search_clear_recent">Очистить</string>
+    <string name="search_furaffinity">Поиск по FurAffinity</string>
+    
+    <string name="profile_about">О себе</string>
+    <string name="profile_show_more">Показать больше</string>
+    <string name="profile_show_less">Показать меньше</string>
+    
+    <string name="downloads_empty_title">Пока нет загрузок</string>
+    <string name="downloads_empty_desc">Сохраненные арты появятся здесь.</string>
+    
+    <string name="settings_not_logged_in">Не в сети</string>
+    <string name="settings_login_to_furaffinity">Войти в FurAffinity</string>
+    <string name="login_sign_in">Войти в FurAffinity</string>
+    <string name="home_not_logged_in">Вы не вошли в систему. Некоторый контент может быть недоступен.</string>
+    <string name="settings_startup_tab">Вкладка при запуске</string>
+    <string name="settings_startup_tab_desc">Выберите вкладку, которая откроется при запуске приложения</string>
+
+    <string name="login_title">Вход</string>
+    <string name="login_username">Имя пользователя</string>
+    <string name="login_password">Пароль</string>
+    <string name="login_button">Войти</string>
+    <string name="login_browser">Войти через браузер</string>
+
+    <string name="settings_filters_live_preview">Предпросмотр</string>
+    <string name="settings_filters_live_preview_desc">Добавьте фильтры ниже, чтобы скрыть эти посты.</string>
+    <string name="settings_filters_all_hidden">Все посты скрыты</string>
+    <string name="settings_filters_muted_words">Скрытые слова в заголовках</string>
+    <string name="settings_filters_muted_words_desc">Посты с этими словами в названии будут скрыты.</string>
+    <string name="settings_filters_muted_words_placeholder">например, YCH, Commission, Adopt</string>
+    <string name="meta_resolution">Разрешение</string>
+    <string name="meta_file_size">Размер</string>
+    <string name="meta_file_type">Формат</string>
+    <string name="meta_date">Дата</string>
+</resources>

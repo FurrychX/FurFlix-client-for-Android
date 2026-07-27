@@ -1,0 +1,38 @@
+# Gradle
+.gradle/
+build/
+app/build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# IDE
+.idea/workspace.xml
+.idea/caches/
+.idea/deploymentTargetSelector.xml
+.idea/runConfigurations.xml
+.idea/tasks.xml
+.kotlin/
+
+# Local properties
+local.properties
+
+# Built APKs
+*.apk
+*.aab
+
+# Logs
+*.log
+monkey_log.txt
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Signing / Keystore (NEVER commit these!)
+*.keystore
+*.jks
+keystore.properties
+release.properties
+
+# Crash reports
+crash_log.txt
+hs_err_pid*

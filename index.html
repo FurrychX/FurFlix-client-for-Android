@@ -1,0 +1,1208 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FurFlix — Native FurAffinity Client for Android</title>
+
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com"></script>
+
+<!-- FontAwesome Icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<!-- Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;1,500&display=swap" rel="stylesheet">
+
+<!-- Shader Web Background -->
+<script src="https://xemantic.github.io/shader-web-background/dist/shader-web-background.min.js"></script>
+
+<!-- GSAP & ScrollTrigger -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tsparticles-slim@2.12.0/tsparticles.slim.bundle.min.js"></script>
+
+<script type="x-shader/x-fragment" id="image">
+    precision mediump float;
+    #define SPIN_EASE 0.55
+    #define spin_time 12.
+    #define spin_amount 0.22
+    #define contrast 3.0
+
+    #define colour_1 vec4(0.55, 0.40, 0.78, 1.0)
+    #define colour_2 vec4(0.72, 0.55, 0.95, 1.0)
+    #define colour_3 vec4(0.06, 0.04, 0.12, 1.0)
+
+    uniform vec2 iResolution;
+    uniform float iTime;
+
+    void main() {
+        float pixel_size = 1.0;
+        vec2 uv = (gl_FragCoord.xy - 0.5*iResolution.xy) / length(iResolution.xy) - vec2(0.12, 0.);
+        float uv_len = length(uv);
+        float speed = (spin_time*SPIN_EASE*0.2) + 302.2;
+        float new_pixel_angle = atan(uv.y, uv.x) + speed - SPIN_EASE*20.*(spin_amount*uv_len + (1.-spin_amount));
+        vec2 mid = vec2(0.5);
+        uv = (vec2(uv_len*cos(new_pixel_angle)+mid.x, uv_len*sin(new_pixel_angle)+mid.y)-mid);
+        uv *= 30.;
+        speed = iTime*1.8;
+        vec2 uv2 = vec2(uv.x+uv.y);
+        for(int i=0; i<5; i++) {
+            uv2 += sin(max(uv.x, uv.y)) + uv;
+            uv  += 0.5*vec2(cos(5.1123+0.353*uv2.y+speed*0.1311), sin(uv2.x-0.113*speed));
+            uv  -= cos(uv.x+uv.y) - sin(uv.x*0.711-uv.y);
+        }
+        float cm = 0.25*contrast+0.5*spin_amount+1.2;
+        float pr = min(2., max(0., length(uv)*0.035*cm));
+        float c1 = max(0., 1.-cm*abs(1.-pr));
+        float c2 = max(0., 1.-cm*abs(pr));
+        float c3 = 1.-min(1.,c1+c2);
+        gl_FragColor = (0.3/contrast)*colour_1 + (1.-0.3/contrast)*(colour_1*c1+colour_2*c2+vec4(c3*colour_3.rgb,c3*colour_1.a));
+    }
+</script>
+
+<style>
+  :root {
+    --card-bg: rgba(22, 18, 30, 0.88);
+    --card-border: rgba(90, 70, 120, 0.45);
+    --text: #ede8f5;
+    --text-dim: #b5adc8;
+    --text-muted: #7a7290;
+    --accent: #b794f4;
+    --accent-hover: #d6bcfa;
+    --accent-glow: rgba(183, 148, 244, 0.2);
+    --accent-rgb: 183, 148, 244;
+    --gold: #a78bfa;
+    --divider: rgba(60, 50, 80, 0.55);
+    --phone-bg: #14101e;
+  }
+
+  /* Theme Presets */
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    color: var(--text);
+    background-color: #0e0b18;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .font-serif-heading {
+    font-family: 'Playfair Display', Georgia, serif;
+  }
+
+  .font-mono-code {
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track { background: #0a0814; }
+    background: #0e0b18;
+  }
+  ::-webkit-scrollbar-thumb { background: #3d3450; border-radius: 4px; }
+    background: #2e2645;
+    border-radius: 4px;
+  }
+  ::-webkit-scrollbar-thumb { background: #3d3450; border-radius: 4px; }
+    background: var(--accent);
+  }
+
+  /* Glassmorphism main card */
+  .glass-card {
+    background: var(--card-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--card-border);
+    box-shadow: 0 0 80px var(--accent-glow), 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+    transform: translateZ(0);
+  }
+
+  /* Interactive spotlight feature card */
+  .feature-card {
+    transition: border-color 0.4s, transform 0.4s, box-shadow 0.4s, background-color 0.4s;
+    background-color: rgba(22, 18, 30, 0.4);
+    position: relative;
+    overflow: hidden;
+  }
+  
+  @keyframes levitate3d {
+    0% { transform: translateY(0px) rotateX(4deg) rotateY(-4deg); }
+    50% { transform: translateY(-15px) rotateX(-4deg) rotateY(4deg); }
+    100% { transform: translateY(0px) rotateX(4deg) rotateY(-4deg); }
+  }
+  .levitate-3d {
+    animation: levitate3d 6s ease-in-out infinite;
+    transform-style: preserve-3d;
+  }
+  .support-wrap {
+    perspective: 1000px;
+  }
+  .feature-card::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: radial-gradient(circle, rgba(183, 148, 244, 0.15) 0%, rgba(183, 148, 244, 0) 70%);
+    transform: translate(-50%, -50%);
+    transition: width 0.4s ease, height 0.4s ease;
+    border-radius: 50%;
+    z-index: 0;
+    pointer-events: none;
+  }
+  .feature-card:hover::after {
+    width: 300px;
+    height: 300px;
+  }
+  .feature-card > * {
+    position: relative;
+    z-index: 1;
+  }
+  .feature-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-6px) scale(1.02);
+    box-shadow: 0 15px 35px -10px var(--accent-glow);
+    background: rgba(28, 22, 48, 0.85);
+  }
+
+  /* Button Shine Hover Effect */
+  .btn-shine {
+    position: relative;
+    overflow: hidden;
+  }
+  .btn-shine::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.3) 50%, rgba(255,255,255,0) 100%);
+    transform: skewX(-20deg);
+    transition: all 0.6s ease;
+  }
+  .btn-shine:hover::before {
+    left: 150%;
+  }
+
+  /* Phone Mockup Styling */
+  .phone-frame {
+    width: 360px;
+    height: 660px;
+    background: var(--phone-bg);
+    border: 8px solid #1a1630;
+    border-radius: 40px;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.06), 0 30px 60px rgba(0, 0, 0, 0.8);
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+  }
+  .phone-notch {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90px;
+    height: 18px;
+    background: #3d3450;
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+    z-index: 40;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .phone-camera {
+    width: 8px;
+    height: 8px;
+    background: #0a0814;
+    border-radius: 50%;
+  }
+
+  /* Glow accents */
+  .text-accent { color: var(--accent); }
+  .border-accent { border-color: var(--accent); }
+
+  /* Animated pulse dot */
+  .pulse-dot {
+    box-shadow: 0 0 0 0 rgba(var(--accent-rgb), 0.7);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(var(--accent-rgb), 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(var(--accent-rgb), 0); }
+    100% { box-shadow: 0 0 0 0 rgba(var(--accent-rgb), 0); }
+  }
+</style>
+</head>
+<body class="min-h-screen py-6 px-3 sm:px-6 md:py-12 flex flex-col items-center justify-start relative overflow-x-hidden">
+
+<!-- Particles Container (Visible only on the edges) -->
+<div id="tsparticles" class="fixed inset-0 z-0 pointer-events-none" style="mask-image: linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 30%, rgba(0,0,0,0) 70%, rgba(0,0,0,1) 100%); -webkit-mask-image: linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 30%, rgba(0,0,0,0) 70%, rgba(0,0,0,1) 100%);"></div>
+
+<!-- Shader Init script -->
+<script>
+  let t = 0;
+  requestAnimationFrame(function u() {
+    t += 1 / 120;
+    requestAnimationFrame(u);
+  });
+  shaderWebBackground.shade({
+    shaders: {
+      Image: {
+        uniforms: {
+          iResolution: function(gl, loc, ctx) { gl.uniform2f(loc, ctx.width, ctx.height); },
+          iTime: function(gl, loc) { gl.uniform1f(loc, t); }
+        }
+      }
+    }
+  });
+</script>
+
+<!-- Sticky Navigation Bar -->
+<header class="w-full max-w-5xl mb-6 sticky top-3 z-50 transition-all duration-300 relative">
+  <nav class="bg-[#161228]/90 backdrop-blur-md border border-[#3d3450] rounded-2xl px-4 sm:px-6 py-3 flex items-center justify-between shadow-2xl">
+    <!-- Brand Logo -->
+    <a href="#" class="flex items-center gap-2.5 group relative z-10">
+      <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-[var(--accent)] to-[var(--gold)] flex items-center justify-center text-slate-950 font-black text-lg shadow-md group-hover:scale-105 transition-transform">
+        🐾
+      </div>
+      <div class="flex flex-col">
+        <span class="font-bold text-sm tracking-tight leading-tight text-white group-hover:text-[var(--accent)] transition-colors">
+          FurFlix
+        </span>
+        <span class="font-mono-code text-[10px] text-[var(--text-muted)] tracking-wider">Android Client</span>
+      </div>
+    </a>
+
+    <!-- Nav Links (Desktop) -->
+    <div class="hidden md:flex items-center gap-6 font-mono-code text-xs text-[var(--text-dim)]">
+      <a href="#features" data-i18n="navFeat" class="hover:text-[var(--accent)] transition-colors">01. Features</a>
+      <a href="#comparison" data-i18n="navWhy" class="hover:text-[var(--accent)] transition-colors">02. Why</a>
+      <a href="#screens" data-i18n="navScr" class="hover:text-[var(--accent)] transition-colors">03. Screens</a>
+      <a href="#support" data-i18n="navSup" class="hover:text-[var(--accent)] transition-colors">04. Support</a>
+      <a href="#faq" data-i18n="navFaq" class="hover:text-[var(--accent)] transition-colors">05. FAQ</a>
+    </div>
+
+    <!-- Right Controls: Language & Theme Switcher -->
+    <div class="flex items-center gap-2 sm:gap-3">
+      <!-- Language Selector -->
+      <div class="flex bg-[#161228] border border-[#3d3450] rounded-lg p-0.5 text-[11px] font-mono-code">
+        <button id="lang-ru" onclick="setLanguage('ru')" class="px-2 py-0.5 rounded text-[var(--text-dim)] hover:text-white transition-all">RU</button>
+        <button id="lang-en" onclick="setLanguage('en')" class="px-2 py-0.5 rounded bg-[var(--accent)] text-slate-950 font-bold transition-all">EN</button>
+        <button id="lang-ua" onclick="setLanguage('ua')" class="px-2 py-0.5 rounded text-[var(--text-dim)] hover:text-white transition-all">UA</button>
+      </div>
+
+      <!-- Download CTA Navbar Button -->
+      <a href="https://github.com/FurrychX/FurFlix-client-for-Android/releases" target="_blank" rel="noopener" class="btn-shine hidden sm:inline-flex items-center gap-1.5 bg-gradient-to-r from-[var(--accent)] to-[var(--accent-hover)] text-slate-950 font-bold text-xs px-3.5 py-1.5 rounded-lg shadow-lg hover:brightness-110 active:scale-95 transition-all">
+        <i class="fa-solid fa-download"></i>
+        <span>APK</span>
+      </a>
+    </div>
+  </nav>
+</header>
+
+<!-- Main Container Card -->
+<main class="glass-card max-w-5xl w-full rounded-2xl md:rounded-3xl p-6 sm:p-10 md:p-12 flex flex-col items-center text-center relative z-10">
+  
+  <!-- Subtle Background Accent Lighting -->
+  <div class="absolute -top-32 -left-32 w-64 h-64 overflow-hidden bg-[var(--accent)] opacity-10 rounded-full blur-3xl pointer-events-none"></div>
+  <div class="absolute top-1/2 -right-32 w-80 h-80 overflow-hidden bg-[var(--gold)] opacity-10 rounded-full blur-3xl pointer-events-none"></div>
+
+  <!-- Eyebrow Badge -->
+  <div class="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-[#231d3a]/80 border border-[var(--card-border)] font-mono-code text-[11px] text-[var(--accent)] uppercase tracking-widest mb-6 shadow-inner">
+    <span class="w-2 h-2 rounded-full bg-[var(--accent)] pulse-dot"></span>
+    <span id="hero-eyebrow" data-i18n="eyebrow">FurAffinity Android Client</span>
+  </div>
+
+  <!-- Main Headline -->
+  <h1 class="font-serif-heading text-4xl sm:text-5xl md:text-6xl tracking-tight leading-[1.08] font-normal mb-4 text-white">
+    <span id="hero-title-1" data-i18n="title1">Your FurAffinity</span><br>
+    <span id="hero-title-2" data-i18n="title2" class="italic text-[var(--accent-hover)]">the way it should be</span>
+  </h1>
+
+  <!-- Lede Subtitle -->
+  <p id="hero-lede" data-i18n="lede" class="max-w-xl text-[var(--text-dim)] text-base sm:text-lg leading-relaxed mb-8">
+    Native Android app for FurAffinity — fluid swipe gestures, snappy pinch zoom, smart full-text search, and your custom sub feed.
+  </p>
+
+  <!-- CTA Action Buttons -->
+  <div class="flex flex-wrap items-center justify-center gap-3 sm:gap-4 mb-8">
+    <a href="https://github.com/FurrychX/FurFlix-client-for-Android/releases" target="_blank" rel="noopener" id="btn-download-apk" class="btn-shine font-mono-code text-xs sm:text-sm font-bold bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white px-6 py-3 rounded-xl shadow-lg shadow-[var(--accent-glow)] flex items-center gap-2.5 hover:-translate-y-0.5 active:translate-y-0 transition-all">
+      <i class="fa-solid fa-download text-base"></i>
+      <span data-i18n="btnDownload">Download APK</span>
+    </a>
+    <a href="#support" class="btn-shine font-mono-code text-xs sm:text-sm font-bold border border-[var(--accent)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-white px-6 py-3 rounded-xl flex items-center gap-2.5 transition-all hover:-translate-y-0.5">
+      <span id="btn-support-project" data-i18n="btnSupport">❤️ Support Project</span>
+    </a>
+  </div>
+
+  <!-- Quick Feature Pills Stats -->
+  <div class="w-full max-w-2xl grid grid-cols-2 sm:grid-cols-4 gap-2 mb-8">
+    <div class="p-3 rounded-lg bg-[#141024]/80 border border-[#3d3450]">
+      <div data-i18n="stat1t" class="text-[var(--accent)] font-bold text-sm">Android 8.0+</div>
+      <div data-i18n="stat1d" class="text-xs text-[var(--text-muted)] mt-0.5">API 26 and higher</div>
+    </div>
+    <div class="p-3 rounded-lg bg-[#141024]/80 border border-[#3d3450]">
+      <div data-i18n="stat2t" class="text-[var(--accent)] font-bold text-sm">8 Themes</div>
+      <div data-i18n="stat2d" class="text-xs text-[var(--text-muted)] mt-0.5">Custom icons</div>
+    </div>
+    <div class="p-3 rounded-lg bg-[#141024]/80 border border-[#3d3450]">
+      <div data-i18n="stat3t" class="text-[var(--accent)] font-bold text-sm">3 Languages</div>
+      <div data-i18n="stat3d" class="text-xs text-[var(--text-muted)] mt-0.5">EN · RU · UA</div>
+    </div>
+    <div class="p-3 rounded-lg bg-[#141024]/80 border border-[#3d3450]">
+      <div data-i18n="stat4t" class="text-[var(--accent)] font-bold text-sm">SFW / NSFW</div>
+      <div data-i18n="stat4d" class="text-xs text-[var(--text-muted)] mt-0.5">Flexible filtering</div>
+    </div>
+  </div>
+
+  <hr class="w-full border-t border-[var(--divider)] my-10">
+
+  <!-- SECTION 03 — INTERACTIVE PHONE SCREEN SHOWCASE -->
+  <section id="screens" class="w-full mb-12 scroll-mt-20">
+    <div class="text-center mb-8">
+      <div data-i18n="sc_t" class="font-mono-code text-xs text-[var(--accent)] uppercase tracking-widest mb-1">03 — Screens</div>
+      <h2 data-i18n="sc_h" class="font-serif-heading text-2xl sm:text-3xl font-normal">Interactive Preview</h2>
+      <p data-i18n="sc_d" class="text-xs text-[var(--text-dim)] mt-1">Select a screen on the left to preview</p>
+    </div>
+
+    <!-- Phone Showcase Container -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center bg-[#161228]/60 border border-white/5 hover:border-white/10 transition-colors p-4 sm:p-6 rounded-2xl max-w-5xl mx-auto shadow-2xl">
+      
+      <!-- Screen Selection Navigation List -->
+      <div class="lg:col-span-4 space-y-3 text-left flex flex-col items-end justify-center">
+        <!-- Button 0 -->
+        <button onclick="selectScreen(0)" data-index="0" class="screen-nav-btn w-64 p-3.5 rounded-2xl border border-[var(--accent)] bg-white/10 flex items-center text-left transition-all duration-300 shadow-[0_0_15px_var(--accent-glow)] translate-x-3 group">
+          <div class="flex items-center gap-3 w-full">
+            <span class="font-mono-code text-xs font-bold text-[var(--accent)] transition-colors num-lbl">01</span>
+            <div>
+              <div data-i18n="b0t" class="font-bold text-sm text-white group-hover:text-[var(--accent)] transition-colors">Feed</div>
+              <div data-i18n="b0d" class="text-xs text-[var(--text-dim)]">Artworks, grid or list</div>
+            </div>
+          </div>
+        </button>
+
+        <!-- Button 1 -->
+        <button onclick="selectScreen(1)" data-index="1" class="screen-nav-btn w-64 p-3.5 rounded-2xl border border-white/5 hover:border-white/20 bg-[#141024]/50 hover:bg-white/5 flex items-center text-left transition-all duration-300 hover:translate-x-3 group">
+          <div class="flex items-center gap-3 w-full">
+            <span class="font-mono-code text-xs text-[var(--text-muted)] group-hover:text-white transition-colors num-lbl">02</span>
+            <div>
+              <div data-i18n="b1t" class="font-bold text-sm text-white group-hover:text-[var(--accent)] transition-colors">Latest</div>
+              <div data-i18n="b1d" class="text-xs text-[var(--text-dim)]">Fresh artworks</div>
+            </div>
+          </div>
+        </button>
+
+        <!-- Button 3 -->
+        <button onclick="selectScreen(3)" data-index="3" class="screen-nav-btn w-64 p-3.5 rounded-2xl border border-white/5 hover:border-white/20 bg-[#141024]/50 hover:bg-white/5 flex items-center text-left transition-all duration-300 hover:translate-x-3 group">
+          <div class="flex items-center gap-3 w-full">
+            <span class="font-mono-code text-xs text-[var(--text-muted)] group-hover:text-white transition-colors num-lbl">03</span>
+            <div>
+              <div data-i18n="b3t" class="font-bold text-sm text-white group-hover:text-[var(--accent)] transition-colors">View</div>
+              <div data-i18n="b3d" class="text-xs text-[var(--text-dim)]">Zoom, tags, description</div>
+            </div>
+          </div>
+        </button>
+
+        <!-- Button 4 -->
+        <button onclick="selectScreen(4)" data-index="4" class="screen-nav-btn w-64 p-3.5 rounded-2xl border border-white/5 hover:border-white/20 bg-[#141024]/50 hover:bg-white/5 flex items-center text-left transition-all duration-300 hover:translate-x-3 group">
+          <div class="flex items-center gap-3 w-full">
+            <span class="font-mono-code text-xs text-[var(--text-muted)] group-hover:text-white transition-colors num-lbl">04</span>
+            <div>
+              <div data-i18n="b4t" class="font-bold text-sm text-white group-hover:text-[var(--accent)] transition-colors">Profile</div>
+              <div data-i18n="b4d" class="text-xs text-[var(--text-dim)]">Gallery, favorites</div>
+            </div>
+          </div>
+        </button>
+
+        <!-- Button 5 -->
+        <button onclick="selectScreen(5)" data-index="5" class="screen-nav-btn w-64 p-3.5 rounded-2xl border border-white/5 hover:border-white/20 bg-[#141024]/50 hover:bg-white/5 flex items-center text-left transition-all duration-300 hover:translate-x-3 group">
+          <div class="flex items-center gap-3 w-full">
+            <span class="font-mono-code text-xs text-[var(--text-muted)] group-hover:text-white transition-colors num-lbl">05</span>
+            <div>
+              <div data-i18n="b5t" class="font-bold text-sm text-white group-hover:text-[var(--accent)] transition-colors">Search</div>
+              <div data-i18n="b5d" class="text-xs text-[var(--text-dim)]">Filters and chips</div>
+            </div>
+          </div>
+        </button>
+
+        <!-- Button 6 -->
+        <button onclick="selectScreen(6)" data-index="6" class="screen-nav-btn w-64 p-3.5 rounded-2xl border border-white/5 hover:border-white/20 bg-[#141024]/50 hover:bg-white/5 flex items-center text-left transition-all duration-300 hover:translate-x-3 group">
+          <div class="flex items-center gap-3 w-full">
+            <span class="font-mono-code text-xs text-[var(--text-muted)] group-hover:text-white transition-colors num-lbl">06</span>
+            <div>
+              <div data-i18n="b6t" class="font-bold text-sm text-white group-hover:text-[var(--accent)] transition-colors">Settings</div>
+              <div data-i18n="b6d" class="text-xs text-[var(--text-dim)]">Themes, icons, language</div>
+            </div>
+          </div>
+        </button>
+
+        <!-- Button 7 -->
+        <button onclick="selectScreen(7)" data-index="7" class="screen-nav-btn w-64 p-3.5 rounded-2xl border border-white/5 hover:border-white/20 bg-[#141024]/50 hover:bg-white/5 flex items-center text-left transition-all duration-300 hover:translate-x-3 group">
+          <div class="flex items-center gap-3 w-full">
+            <span class="font-mono-code text-xs text-[var(--text-muted)] group-hover:text-white transition-colors num-lbl">07</span>
+            <div>
+              <div data-i18n="b7t" class="font-bold text-sm text-white group-hover:text-[var(--accent)] transition-colors">Subs</div>
+              <div data-i18n="b7d" class="text-xs text-[var(--text-dim)]">Favorite creators</div>
+            </div>
+          </div>
+        </button>
+      </div>
+
+      <!-- Phone Frame Viewport -->
+      <div class="lg:col-span-7 flex justify-center py-2">
+        <div class="phone-frame reveal flex flex-col justify-between p-3 select-none">
+          <!-- Top Phone Hardware Notch -->
+          <div class="phone-notch">
+            <div class="phone-camera"></div>
+          </div>
+
+          <!-- Phone Screen Header Status Bar -->
+          <div class="pt-6 px-3 flex justify-between items-center text-[9px] text-[var(--text-muted)] border-b border-white/5 pb-1.5">
+            <span>12:45</span>
+            <div class="flex items-center gap-1.5">
+              <i class="fa-solid fa-signal text-[8px]"></i>
+              <i class="fa-solid fa-wifi text-[8px]"></i>
+              <i class="fa-solid fa-battery-full text-[8px] text-[var(--accent)]"></i>
+            </div>
+          </div>
+
+          <!-- Dynamic Display Area inside Phone Frame -->
+          <div id="phone-display" style="transition: opacity 0.3s ease" class="flex-1 overflow-hidden py-1.5 px-2 text-left space-y-2 text-xs">
+            <!-- Dynamically populated via JavaScript selectScreen() -->
+          </div>
+
+          <!-- Bottom Phone Navigation Bar -->
+          <div class="pb-1 pt-1.5 border-t border-white/10 flex justify-around items-end text-[var(--text-muted)]">
+            <button onclick="selectScreen(0)" class="flex flex-col items-center gap-0.5 hover:text-[var(--accent)] transition-colors w-12">
+              <i class="fa-solid fa-paw text-sm"></i>
+              <span data-i18n="nb_0" class="text-[7px]">Feed</span>
+            </button>
+            <button onclick="selectScreen(1)" class="flex flex-col items-center gap-0.5 hover:text-[var(--accent)] transition-colors w-12">
+              <i class="fa-solid fa-fire text-sm"></i>
+              <span data-i18n="nb_1" class="text-[7px]">Latest</span>
+            </button>
+            <button onclick="selectScreen(5)" class="flex flex-col items-center gap-0.5 hover:text-[var(--accent)] transition-colors w-12">
+              <i class="fa-solid fa-magnifying-glass text-sm"></i>
+              <span data-i18n="nb_5" class="text-[7px]">Search</span>
+            </button>
+            <button onclick="selectScreen(4)" class="flex flex-col items-center gap-0.5 hover:text-[var(--accent)] transition-colors w-12">
+              <i class="fa-solid fa-user text-sm"></i>
+              <span data-i18n="nb_4" class="text-[7px]">Profile</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="w-full border-t border-[var(--divider)] my-10">
+
+  <!-- SECTION 01 — FEATURES GRID -->
+  <section id="features" class="reveal w-full mb-12 scroll-mt-20">
+    <div class="text-center mb-8">
+      <div data-i18n="feat_t" class="font-mono-code text-xs text-[var(--accent)] uppercase tracking-widest mb-1">01 — Features</div>
+      <h2 data-i18n="feat_h" class="font-serif-heading text-2xl sm:text-3xl font-normal">Everything you need</h2>
+    </div>
+
+    <!-- Features 8 Cards Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-left max-w-6xl mx-auto">
+      
+      <div class="feature-card reveal p-4 rounded-2xl flex flex-col gap-2" data-cat="content">
+        <div class="text-xl">📱</div>
+        <h3 data-i18n="ft1t" class="font-bold text-sm text-white">Feed</h3>
+        <p data-i18n="ft1d" class="text-xs text-[var(--text-dim)] leading-relaxed">Infinite scroll, grid or list. Personal sub feed.</p>
+      </div>
+
+      <div class="feature-card reveal p-4 rounded-2xl flex flex-col gap-2" data-cat="content">
+        <div class="text-xl">🔍</div>
+        <h3 data-i18n="ft2t" class="font-bold text-sm text-white">Search</h3>
+        <p data-i18n="ft2d" class="text-xs text-[var(--text-dim)] leading-relaxed">Full-text, by tags, with autocomplete. Rating and type filters.</p>
+      </div>
+
+      <div class="feature-card reveal p-4 rounded-2xl flex flex-col gap-2" data-cat="content">
+        <div class="text-xl">🖼️</div>
+        <h3 data-i18n="ft3t" class="font-bold text-sm text-white">View</h3>
+        <p data-i18n="ft3d" class="text-xs text-[var(--text-dim)] leading-relaxed">Swipe between posts, pinch-zoom, description and comments.</p>
+      </div>
+
+      <div class="feature-card reveal p-4 rounded-2xl flex flex-col gap-2" data-cat="content">
+        <div class="text-xl">👤</div>
+        <h3 data-i18n="ft4t" class="font-bold text-sm text-white">Profiles</h3>
+        <p data-i18n="ft4d" class="text-xs text-[var(--text-dim)] leading-relaxed">Gallery, favorites, subs. One tap to like and follow.</p>
+      </div>
+
+      <div class="feature-card reveal p-4 rounded-2xl flex flex-col gap-2" data-cat="system">
+        <div class="text-xl">⬇️</div>
+        <h3 data-i18n="ft5t" class="font-bold text-sm text-white">Downloads</h3>
+        <p data-i18n="ft5d" class="text-xs text-[var(--text-dim)] leading-relaxed">Download manager with metadata. Return to original post.</p>
+      </div>
+
+      <div class="feature-card reveal p-4 rounded-2xl flex flex-col gap-2" data-cat="system">
+        <div class="text-xl">🔒</div>
+        <h3 data-i18n="ft6t" class="font-bold text-sm text-white">Filters</h3>
+        <p data-i18n="ft6d" class="text-xs text-[var(--text-dim)] leading-relaxed">Word muting, tag blacklist. NSFW toggle.</p>
+      </div>
+
+      <div class="feature-card reveal p-4 rounded-2xl flex flex-col gap-2" data-cat="custom">
+        <div class="text-xl">🎨</div>
+        <h3 data-i18n="ft7t" class="font-bold text-sm text-white">Themes & Icons</h3>
+        <p data-i18n="ft7d" class="text-xs text-[var(--text-dim)] leading-relaxed">8 color themes, 8 icons. Change without reinstalling.</p>
+      </div>
+
+      <div class="feature-card reveal p-4 rounded-2xl flex flex-col gap-2" data-cat="custom">
+        <div class="text-xl">🌍</div>
+        <h3 data-i18n="ft8t" class="font-bold text-sm text-white">Languages</h3>
+        <p data-i18n="ft8d" class="text-xs text-[var(--text-dim)] leading-relaxed">English, Russian, Ukrainian. Instant switching.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <hr class="w-full border-t border-[var(--divider)] my-10">
+
+  <!-- SECTION 02 — COMPARISON MATRIX -->
+  <section id="comparison" class="reveal w-full mb-12 scroll-mt-20">
+    <div class="text-center mb-8">
+      <h2 data-i18n="comp_title" class="font-serif-heading text-2xl sm:text-3xl font-normal">Comparison: Browser vs FurFlix</h2>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-left border-collapse text-xs sm:text-sm">
+        <thead>
+          <tr class="border-b border-[var(--divider)] text-[var(--accent)] font-mono-code">
+            <th data-i18n="th_param" class="p-3">Parameter</th>
+            <th data-i18n="th_browser" class="p-3 text-rose-400/80">Browser</th>
+            <th data-i18n="th_app" class="p-3 text-[var(--accent)] font-bold">FurFlix App 🐾</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-[var(--divider)] text-[var(--text-dim)]">
+          <tr class="hover:bg-[#161228]">
+            <td data-i18n="r1_p" class="p-3 font-medium text-white">Speed</td>
+            <td data-i18n="r1_b" class="p-3 text-rose-400/80">Slow HTML loading</td>
+            <td data-i18n="r1_f" class="p-3 text-emerald-400 font-medium">Native UI with zero lag</td>
+          </tr>
+          <tr class="hover:bg-[#161228]">
+            <td data-i18n="r2_p" class="p-3 font-medium text-white">Gestures</td>
+            <td data-i18n="r2_b" class="p-3 text-rose-400/80">Standard browser scrolling</td>
+            <td data-i18n="r2_f" class="p-3 text-emerald-400 font-medium">Swiping between posts, pinch-zoom</td>
+          </tr>
+          <tr class="hover:bg-[#161228]">
+            <td data-i18n="r3_p" class="p-3 font-medium text-white">Downloads</td>
+            <td data-i18n="r3_b" class="p-3 text-rose-400/80">Saved via browser, disconnected from post</td>
+            <td data-i18n="r3_f" class="p-3 text-emerald-400 font-medium">Built-in manager with return to author and post</td>
+          </tr>
+          <tr class="hover:bg-[#161228]">
+            <td data-i18n="r4_p" class="p-3 font-medium text-white">Theming</td>
+            <td data-i18n="r4_b" class="p-3 text-rose-400/80">Standard site theme</td>
+            <td data-i18n="r4_f" class="p-3 text-emerald-400 font-medium">8 themes + 8 launcher icons</td>
+          </tr>
+          <tr class="hover:bg-[#161228]">
+            <td data-i18n="r5_p" class="p-3 font-medium text-white">Filters</td>
+            <td data-i18n="r5_b" class="p-3 text-rose-400/80">Complex search in account settings</td>
+            <td data-i18n="r5_f" class="p-3 text-emerald-400 font-medium">One-tap NSFW toggle, easy blacklist</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <hr class="w-full border-t border-[var(--divider)] my-10">
+
+  <!-- SECTION 05 — FAQ ACCORDION -->
+  <section id="faq" class="reveal w-full mb-12 scroll-mt-20">
+    <div class="text-center mb-8">
+      <div data-i18n="faq_eye" class="font-mono-code text-xs text-[var(--accent)] uppercase tracking-widest mb-1">05 — Questions and Answers</div>
+      <h2 data-i18n="faq_h" class="font-serif-heading text-2xl sm:text-3xl font-normal">Frequently Asked Questions</h2>
+    </div>
+
+    <div class="space-y-4 text-left max-w-4xl mx-auto">
+      <!-- FAQ Item 1 -->
+      <div class="faq-item reveal group border border-white/5 hover:border-white/10 rounded-2xl bg-white/5 backdrop-blur-md overflow-hidden transition-all shadow-lg hover:shadow-[0_0_20px_rgba(255,255,255,0.05)]">
+        <button onclick="toggleFaq(this)" class="w-full p-5 flex items-center justify-between cursor-pointer text-left focus:outline-none">
+          <span data-i18n="q1" class="font-bold text-sm text-white transition-colors group-hover:text-[var(--accent)]">Is it safe to login through FurFlix?</span>
+          <i class="fa-solid fa-chevron-down text-sm text-white/40 group-hover:text-[var(--accent)] transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] faq-icon"></i>
+        </button>
+        <div class="grid grid-rows-[0fr] transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] faq-content-wrap">
+          <div class="overflow-hidden">
+            <div data-i18n="a1" class="px-5 pb-5 pt-1 text-sm text-[var(--text-dim)] leading-relaxed">
+              Yes. Authorization is handled via the official embedded FurAffinity WebView. Passwords are never sent to third-party servers and are stored locally in encrypted cookies.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FAQ Item 2 -->
+      <div class="faq-item reveal group border border-white/5 hover:border-white/10 rounded-2xl bg-white/5 backdrop-blur-md overflow-hidden transition-all shadow-lg hover:shadow-[0_0_20px_rgba(255,255,255,0.05)]">
+        <button onclick="toggleFaq(this)" class="w-full p-5 flex items-center justify-between cursor-pointer text-left focus:outline-none">
+          <span data-i18n="q2" class="font-bold text-sm text-white transition-colors group-hover:text-[var(--accent)]">Does it require a rooted phone?</span>
+          <i class="fa-solid fa-chevron-down text-sm text-white/40 group-hover:text-[var(--accent)] transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] faq-icon"></i>
+        </button>
+        <div class="grid grid-rows-[0fr] transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] faq-content-wrap">
+          <div class="overflow-hidden">
+            <div data-i18n="a2" class="px-5 pb-5 pt-1 text-sm text-[var(--text-dim)] leading-relaxed">
+              No. FurFlix works on any device running Android 8.0 (Oreo) or newer.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FAQ Item 3 -->
+      <div class="faq-item reveal group border border-white/5 hover:border-white/10 rounded-2xl bg-white/5 backdrop-blur-md overflow-hidden transition-all shadow-lg hover:shadow-[0_0_20px_rgba(255,255,255,0.05)]">
+        <button onclick="toggleFaq(this)" class="w-full p-5 flex items-center justify-between cursor-pointer text-left focus:outline-none">
+          <span data-i18n="q3" class="font-bold text-sm text-white transition-colors group-hover:text-[var(--accent)]">Is NSFW filtering supported?</span>
+          <i class="fa-solid fa-chevron-down text-sm text-white/40 group-hover:text-[var(--accent)] transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] faq-icon"></i>
+        </button>
+        <div class="grid grid-rows-[0fr] transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] faq-content-wrap">
+          <div class="overflow-hidden">
+            <div data-i18n="a3" class="px-5 pb-5 pt-1 text-sm text-[var(--text-dim)] leading-relaxed">
+              Yes. Content rating visibility (General / Mature / Adult) syncs with your FurAffinity account settings and can be toggled inside the app.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FAQ Item 4 -->
+      <div class="faq-item reveal group border border-white/5 hover:border-white/10 rounded-2xl bg-white/5 backdrop-blur-md overflow-hidden transition-all shadow-lg hover:shadow-[0_0_20px_rgba(255,255,255,0.05)]">
+        <button onclick="toggleFaq(this)" class="w-full p-5 flex items-center justify-between cursor-pointer text-left focus:outline-none">
+          <span data-i18n="q4" class="font-bold text-sm text-white transition-colors group-hover:text-[var(--accent)]">Is the app free? Are there ads?</span>
+          <i class="fa-solid fa-chevron-down text-sm text-white/40 group-hover:text-[var(--accent)] transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] faq-icon"></i>
+        </button>
+        <div class="grid grid-rows-[0fr] transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] faq-content-wrap">
+          <div class="overflow-hidden">
+            <div data-i18n="a4" class="px-5 pb-5 pt-1 text-sm text-[var(--text-dim)] leading-relaxed">
+              FurFlix is completely free and contains no ads or hidden subscriptions. The project is created by an independent developer.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="w-full border-t border-[var(--divider)] my-10">
+
+  <!-- SECTION 04 — SUPPORT & DONATIONS -->
+  <section id="support" class="reveal w-full mb-10 scroll-mt-20">
+    <div class="text-center mb-8">
+      <div data-i18n="sup_eye" class="font-mono-code text-xs text-[var(--accent)] uppercase tracking-widest mb-1">04 — Support</div>
+      <h2 data-i18n="sup_h" class="font-serif-heading text-2xl sm:text-3xl font-normal">Powered by passion</h2>
+      <p data-i18n="sup_d" class="text-xs text-[var(--text-dim)] max-w-md mx-auto mt-1">Developed by one person in their free time. If FurFlix saved your time, consider supporting the project.</p>
+    </div>
+
+    <!-- Support Cards Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 perspective-1000 max-w-5xl mx-auto">
+      
+      <!-- Monobank Card Wrap -->
+      <div class="support-wrap">
+        <div onclick="openSupportModal('mono')" class="levitate-3d p-6 rounded-2xl bg-white/5 backdrop-blur-md border border-[var(--divider)] hover:border-[var(--accent)] cursor-pointer group shadow-lg hover:shadow-[0_0_25px_var(--accent-glow)] transition-all" style="animation-delay: 0s;">
+          <div class="flex items-center justify-between mb-4">
+            <span class="text-2xl">💳</span>
+            <span class="font-mono-code text-[10px] text-[var(--accent)] bg-[var(--accent)]/10 px-2 py-0.5 rounded">UAH / USD / EUR</span>
+          </div>
+          <h3 class="font-bold text-sm text-white mb-1">Monobank</h3>
+          <p class="text-xs text-[var(--text-dim)]">Visa / Mastercard · Google Pay</p>
+          <div class="mt-4 font-mono-code text-xs text-[var(--accent)] group-hover:underline flex items-center gap-1">
+            <span data-i18n="sup_act_m">Show details</span>
+            <i class="fa-solid fa-arrow-right text-[10px] transition-transform group-hover:translate-x-1"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- USDT Card Wrap -->
+      <div class="support-wrap">
+        <div onclick="openSupportModal('usdt')" class="levitate-3d p-6 rounded-2xl bg-white/5 backdrop-blur-md border border-[var(--divider)] hover:border-[var(--accent)] cursor-pointer group shadow-lg hover:shadow-[0_0_25px_var(--accent-glow)] transition-all" style="animation-delay: -2s;">
+          <div class="flex items-center justify-between mb-4">
+            <span class="text-2xl">₮</span>
+            <span class="font-mono-code text-[10px] text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded">TRC20</span>
+          </div>
+          <h3 class="font-bold text-sm text-white mb-1">USDT (Tether)</h3>
+          <p data-i18n="usdt_d" class="text-xs text-[var(--text-dim)]">Tron network (TRX)</p>
+          <div class="mt-4 font-mono-code text-xs text-[var(--accent)] group-hover:underline flex items-center gap-1">
+            <span data-i18n="sup_act_c">Wallet address</span>
+            <i class="fa-solid fa-arrow-right text-[10px] transition-transform group-hover:translate-x-1"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- BTC Card Wrap -->
+      <div class="support-wrap">
+        <div onclick="openSupportModal('btc')" class="levitate-3d p-6 rounded-2xl bg-white/5 backdrop-blur-md border border-[var(--divider)] hover:border-[var(--accent)] cursor-pointer group shadow-lg hover:shadow-[0_0_25px_var(--accent-glow)] transition-all" style="animation-delay: -4s;">
+          <div class="flex items-center justify-between mb-4">
+            <span class="text-2xl">₿</span>
+            <span class="font-mono-code text-[10px] text-violet-400 bg-violet-400/10 px-2 py-0.5 rounded">BITCOIN</span>
+          </div>
+          <h3 class="font-bold text-sm text-white mb-1">Bitcoin</h3>
+          <p data-i18n="btc_d" class="text-xs text-[var(--text-dim)]">Classic BTC transfer</p>
+          <div class="mt-4 font-mono-code text-xs text-[var(--accent)] group-hover:underline flex items-center gap-1">
+            <span data-i18n="sup_act_c2">Wallet address</span>
+            <i class="fa-solid fa-arrow-right text-[10px] transition-transform group-hover:translate-x-1"></i>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- SECTION 05 — CONTACTS -->
+  <section id="contact" class="w-full text-center pt-4">
+    <div data-i18n="con_eye" class="font-mono-code text-xs text-[var(--accent)] uppercase tracking-widest mb-1">Contact Developer</div>
+    <h3 data-i18n="con_h" class="font-serif-heading text-xl mb-4">Suggestions and Bug Reports</h3>
+    <div class="flex flex-wrap justify-center gap-3">
+      <a href="https://t.me/PavelFurrych" target="_blank" rel="noopener" class="font-mono-code text-xs bg-[#161228] border border-[var(--divider)] hover:border-[var(--accent)] text-white px-4 py-2.5 rounded-xl flex items-center gap-2 transition-all">
+        <i class="fa-brands fa-telegram text-sky-400 text-sm"></i>
+        <span>@PavelFurrych</span>
+      </a>
+      <a href="https://x.com/Furrych" target="_blank" rel="noopener" class="font-mono-code text-xs bg-[#161228] border border-[var(--divider)] hover:border-[var(--accent)] text-white px-4 py-2.5 rounded-xl flex items-center gap-2 transition-all">
+        <i class="fa-brands fa-x-twitter text-slate-300 text-sm"></i>
+        <span>@Furrych</span>
+      </a>
+      <a href="https://discord.com" target="_blank" rel="noopener" onclick="navigator.clipboard.writeText('furrych'); showToast(translations[currentLang].discordCopied || 'Discord: furrych copied!'); return false;" class="font-mono-code text-xs bg-[#161228] border border-[var(--divider)] hover:border-[var(--accent)] text-white px-4 py-2.5 rounded-xl flex items-center gap-2 transition-all">
+        <i class="fa-brands fa-discord text-indigo-400 text-sm"></i>
+        <span>furrych</span>
+      </a>
+    </div>
+  </section>
+
+</main>
+
+<!-- Footer -->
+<footer class="mt-8 mb-4 text-center text-xs text-[var(--text-muted)] max-w-5xl w-full">
+  <div data-i18n="footer">🐾 FurFlix — unofficial FurAffinity client for Android</div>
+</footer>
+
+<!-- MODAL 1: DONATION / SUPPORT MODAL -->
+<div id="supportModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300 z-[100] p-4 flex items-center justify-center">
+  <div id="supportModalContent" class="bg-[var(--card-bg)] backdrop-blur-2xl border border-white/10 rounded-3xl max-w-sm w-full p-6 sm:p-8 relative text-center shadow-[0_0_50px_rgba(0,0,0,0.8)] scale-95 transition-transform duration-300">
+    
+    <!-- Close Button -->
+    <button onclick="closeSupportModal()" class="absolute top-5 right-5 w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 hover:text-white transition-all">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+    
+    <!-- Header -->
+    <div class="flex flex-col items-center gap-3 mb-6">
+      <div id="modal-icon" class="text-5xl drop-shadow-lg mb-1">💳</div>
+      <div>
+        <h3 id="modal-title" class="font-serif-heading text-2xl text-white">Monobank</h3>
+        <p id="modal-sub" class="text-sm text-[var(--text-dim)] mt-1">Visa / Mastercard · Google Pay</p>
+      </div>
+    </div>
+
+    <!-- Address Details Box -->
+    <div id="modal-addresses-container" class="mb-5 text-left space-y-2">
+      <!-- Generated items will go here -->
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="space-y-3">
+
+      <a id="jarBtn" href="#" target="_blank" rel="noopener" class="w-full bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-slate-950 font-bold text-sm py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 shadow-[0_0_15px_var(--accent-glow)] hidden">
+        <i class="fa-solid fa-piggy-bank"></i> <span data-i18n="jar">Open Monobank Jar</span>
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Alert Notification -->
+<div id="toast" class="fixed bottom-6 right-6 bg-[#3d3450] border border-[var(--accent)] text-white font-mono-code text-xs px-4 py-3 rounded-xl shadow-2xl opacity-0 pointer-events-none transition-all duration-300 transform translate-y-4 z-50 flex items-center gap-2">
+  <i class="fa-solid fa-circle-check text-[var(--accent)] text-sm"></i>
+  <span id="toast-text">Copied!</span>
+</div>
+
+<script>
+  let currentLang = 'en';
+  
+  // Interactive Phone Screen Contents Generator
+  function getPhoneScreens() {
+    const t = translations[currentLang];
+    return [
+      '<img src="screenshots/browse.png" class="w-full h-full object-cover rounded-lg scale-110" alt="Browse">',
+      '<img src="screenshots/latest.png" class="w-full h-full object-cover rounded-lg scale-110" alt="Latest">',
+      `<div class="flex items-center justify-center h-full"><div class="text-center space-y-2"><div class="text-3xl">🐾</div><div class="font-bold text-white text-xs">${t.sc_login}</div><div class="text-[8px] text-[var(--text-dim)]">${t.sc_login_d}</div></div></div>`,
+      '<img src="screenshots/imageinfo.png" class="w-full h-full object-cover rounded-lg scale-110" alt="Post View">',
+      '<img src="screenshots/userprofile.png" class="w-full h-full object-cover rounded-lg scale-110" alt="Profile">',
+      '<img src="screenshots/tagsearch.png" class="w-full h-full object-cover rounded-lg scale-110" alt="Tag Search">',
+      '<img src="screenshots/settings.png" class="w-full h-full object-cover rounded-lg scale-110" alt="Settings">',
+      '<img src="screenshots/watchlist.png" class="w-full h-full object-cover rounded-lg scale-110" alt="Watchlist">'
+    ];
+  }
+
+  // Support modal dataset
+  function getSupportData() {
+    const t = translations[currentLang];
+    return {
+      mono: {
+        title: 'Monobank',
+        sub: 'Visa / Mastercard · Google Pay',
+        icon: '💳',
+        addresses: [
+          { label: t.cur_uah, val: '4874 1000 3088 2800' },
+          { label: t.cur_usd, val: '4874 1000 8642 3608' },
+          { label: t.cur_eur, val: '4441 1144 9001 3347' }
+        ],
+        jar: 'https://send.monobank.ua/jar/31dqVo9pHr'
+      },
+      usdt: {
+        title: 'USDT (Tether)',
+        sub: t.usdt_sub,
+        icon: '₮',
+        addresses: [
+          { label: 'TRC20', val: 'TVX7biFztNzd2P85y8iDGTN6uLyuduGEj7' }
+        ],
+        jar: null
+      },
+      btc: {
+        title: 'Bitcoin',
+        sub: t.btc_sub,
+        icon: '₿',
+        addresses: [
+          { label: 'BTC Network', val: '12mRZTgc1dPr8iqPmzuwszKK7Ee9uQafwX' }
+        ],
+        jar: null
+      }
+    };
+  }
+
+  // Language Dictionary
+  const translations = {
+    en: {
+      navFeat: '01. Features', navWhy: '02. Why', navScr: '03. Screens', navSup: '04. Support', navFaq: '05. FAQ',
+      eyebrow: 'FurAffinity Android Client', title1: 'Your FurAffinity', title2: 'the way it should be',
+      lede: 'Native Android app for FurAffinity — fluid swipe gestures, snappy pinch zoom, smart full-text search, and your custom sub feed.',
+      btnDownload: 'Download APK', btnSupport: '❤️ Support Project',
+      stat1t: 'Android 8.0+', stat1d: 'API 26 and higher', stat2t: '8 Themes', stat2d: 'Custom icons',
+      stat3t: '3 Languages', stat3d: 'EN · RU · UA', stat4t: 'SFW / NSFW', stat4d: 'Flexible filtering',
+      sc_t: '03 — Screens', sc_h: 'Interactive Preview', sc_d: 'Select a screen on the left to preview',
+      b0t: 'Feed', b0d: 'Artworks, grid or list', b1t: 'Latest', b1d: 'Fresh artworks',
+      b3t: 'View', b3d: 'Zoom, tags, description', b4t: 'Profile', b4d: 'Gallery, favorites',
+      b5t: 'Search', b5d: 'Filters and chips', b6t: 'Settings', b6d: 'Themes, icons, language',
+      b7t: 'Subs', b7d: 'Favorite creators',
+      nb_0: 'Feed', nb_1: 'Latest', nb_5: 'Search', nb_4: 'Profile',
+      sc_login: 'Login to FurAffinity', sc_login_d: 'Secure login via WebView',
+      feat_t: '01 — Features', feat_h: 'Everything you need',
+      ft1t: 'Feed', ft1d: 'Infinite scroll, grid or list. Personal sub feed.',
+      ft2t: 'Search', ft2d: 'Full-text, by tags, with autocomplete. Rating and type filters.',
+      ft3t: 'View', ft3d: 'Swipe between posts, pinch-zoom, description and comments.',
+      ft4t: 'Profiles', ft4d: 'Gallery, favorites, subs. One tap to like and follow.',
+      ft5t: 'Downloads', ft5d: 'Download manager with metadata. Return to original post.',
+      ft6t: 'Filters', ft6d: 'Word muting, tag blacklist. NSFW toggle.',
+      ft7t: 'Themes & Icons', ft7d: '8 color themes, 8 icons. Change without reinstalling.',
+      ft8t: 'Languages', ft8d: 'English, Russian, Ukrainian. Instant switching.',
+      comp_eyebrow: '02 — Why not a browser', comp_title: 'Comparison: Browser vs FurFlix',
+      th_param: 'Parameter', th_browser: 'Browser', th_app: 'FurFlix App 🐾',
+      r1_p: 'Speed', r1_b: 'Slow HTML loading', r1_f: 'Native UI with zero lag',
+      r2_p: 'Gestures', r2_b: 'Standard browser scrolling', r2_f: 'Swiping between posts, pinch-zoom',
+      r3_p: 'Downloads', r3_b: 'Saved via browser, disconnected from post', r3_f: 'Built-in manager with return to author and post',
+      r4_p: 'Theming', r4_b: 'Standard site theme', r4_f: '8 themes + 8 launcher icons',
+      r5_p: 'Filters', r5_b: 'Complex search in account settings', r5_f: 'One-tap NSFW toggle, easy blacklist',
+      faq_eye: '05 — Questions and Answers', faq_h: 'Frequently Asked Questions',
+      q1: 'Is it safe to login through FurFlix?', a1: 'Yes. Authorization is handled via the official embedded FurAffinity WebView. Passwords are never sent to third-party servers and are stored locally in encrypted cookies.',
+      q2: 'Does it require a rooted phone?', a2: 'No. FurFlix works on any device running Android 8.0 (Oreo) or newer.',
+      q3: 'Is NSFW filtering supported?', a3: 'Yes. Content rating visibility (General / Mature / Adult) syncs with your FurAffinity account settings and can be toggled inside the app.',
+      q4: 'Is the app free? Are there ads?', a4: 'FurFlix is completely free and contains no ads or hidden subscriptions. The project is created by an independent developer.',
+      sup_eye: '04 — Support', sup_h: 'Powered by passion', sup_d: 'Developed by one person in their free time. If FurFlix saved your time, consider supporting the project.',
+      sup_act_m: 'Show details', sup_act_c: 'Wallet address', sup_act_c2: 'Wallet address',
+      usdt_d: 'Tron network (TRX)', btc_d: 'Classic BTC transfer',
+      con_eye: 'Contact Developer', con_h: 'Suggestions and Bug Reports',
+      footer: '🐾 FurFlix — unofficial FurAffinity client for Android',
+      jar: 'Open Monobank Jar', cur_uah: 'UAH (Hryvnia)', cur_usd: 'USD (Dollar)', cur_eur: 'EUR (Euro)',
+      usdt_sub: 'Tron Network Wallet Address', btc_sub: 'BTC Wallet Address',
+      toastLang: 'Language changed to: EN', copied: 'copied!', discordCopied: 'Discord: furrych copied!'
+    },
+    ru: {
+      navFeat: '01. Функции', navWhy: '02. Почему', navScr: '03. Экраны', navSup: '04. Поддержка', navFaq: '05. FAQ',
+      eyebrow: 'FurAffinity Android Клиент', title1: 'Твой FurAffinity', title2: 'каким он должен быть',
+      lede: 'Нативное Android-приложение для FurAffinity — плавные свайпы, быстрый пинч-зум, умный полнотекстовый поиск и персональный фид подписок.',
+      btnDownload: 'Скачать APK', btnSupport: '❤️ Поддержать',
+      stat1t: 'Android 8.0+', stat1d: 'API 26 и выше', stat2t: '8 Тем', stat2d: 'Иконки на выбор',
+      stat3t: '3 Языка', stat3d: 'RU · EN · UA', stat4t: 'SFW / NSFW', stat4d: 'Гибкая фильтрация',
+      sc_t: '03 — Экраны', sc_h: 'Интерактивный обзор', sc_d: 'Выберите экран слева для предпросмотра',
+      b0t: 'Лента', b0d: 'Работы, сетка или список', b1t: 'Новое', b1d: 'Свежие работы',
+      b3t: 'Просмотр', b3d: 'Зум, теги, описание', b4t: 'Профиль', b4d: 'Галерея, фавориты',
+      b5t: 'Поиск', b5d: 'Фильтры и чипы', b6t: 'Настройки', b6d: 'Темы, иконки, язык',
+      b7t: 'Подписки', b7d: 'Любимые авторы',
+      nb_0: 'Лента', nb_1: 'Новое', nb_5: 'Поиск', nb_4: 'Профиль',
+      sc_login: 'Вход в FurAffinity', sc_login_d: 'Безопасный вход через WebView',
+      feat_t: '01 — Функционал', feat_h: 'Всё, что нужно для чтения ленты',
+      ft1t: 'Лента', ft1d: 'Бесконечный скролл, сетка или список. Персональный фид подписок.',
+      ft2t: 'Поиск', ft2d: 'Полнотекстовый, по тегам, с автокомплитом. Фильтры по рейтингу и типу.',
+      ft3t: 'Просмотр', ft3d: 'Свайп между постами, пинч-зум, описание и комментарии.',
+      ft4t: 'Профили', ft4d: 'Галерея, фавориты, подписки. Один тап для лайка и фоллоу.',
+      ft5t: 'Загрузки', ft5d: 'Менеджер загрузок с метаданными. Возврат к оригинальному посту и автору из истории.',
+      ft6t: 'Фильтры', ft6d: 'Заглушение слов, блеклист тегов. Переключатель NSFW.',
+      ft7t: 'Темы и иконки', ft7d: '8 цветовых тем, 8 иконок. Смена без переустановки.',
+      ft8t: 'Языки', ft8d: 'English, Русский, Українська. Мгновенное переключение.',
+      comp_eyebrow: '02 — Почему не браузер', comp_title: 'Сравнение: Браузер vs FurFlix',
+      th_param: 'Параметр', th_browser: 'Браузер', th_app: 'FurFlix App 🐾',
+      r1_p: 'Скорость', r1_b: 'Медленная загрузка HTML', r1_f: 'Нативный UI без задержек',
+      r2_p: 'Жесты', r2_b: 'Стандартный браузерный скролл', r2_f: 'Свайпы между постами, Pinch-Zoom',
+      r3_p: 'Загрузки', r3_b: 'Сохранение через браузер, без связи с постом', r3_f: 'Встроенный менеджер с возвратом к автору и посту',
+      r4_p: 'Оформление', r4_b: 'Стандартная тема сайта', r4_f: '8 тем + 8 иконок лаунчера',
+      r5_p: 'Фильтры', r5_b: 'Сложный поиск по настройкам аккаунта', r5_f: 'Переключатель NSFW в один тап, удобный блеклист',
+      faq_eye: '05 — Вопросы и Ответы', faq_h: 'Часто задаваемые вопросы',
+      q1: 'Безопасно ли входить через FurFlix?', a1: 'Да. Авторизация происходит через официальный встроенный WebView FurAffinity. Пароли не передаются сторонним серверам и сохраняются локально на устройстве в зашифрованных куки-файлах.',
+      q2: 'Нужен ли Root на телефоне?', a2: 'Нет. FurFlix работает на любых устройствах с Android 8.0 (Oreo) и новее.',
+      q3: 'Поддерживается ли фильтр NSFW контента?', a3: 'Да. Показ рейтинга контента (General / Mature / Adult) синхронизируется с настройками аккаунта FurAffinity и переключается в настройках приложения.',
+      q4: 'Приложение бесплатное? Есть ли реклама?', a4: 'FurFlix полностью бесплатен и не содержит рекламы или скрытых подписок. Проект создаётся независимым разработчиком.',
+      sup_eye: '04 — Поддержать', sup_h: 'Проект живёт на энтузиазме', sup_d: 'Один разработчик в свободное время. Если FurFlix сэкономил ваше время — поддержите развитие проекта.',
+      sup_act_m: 'Показать реквизиты', sup_act_c: 'Адрес кошелька', sup_act_c2: 'Адрес кошелька',
+      usdt_d: 'Сеть Tron (TRX)', btc_d: 'Классический BTC перевод',
+      con_eye: 'Связь с разработчиком', con_h: 'Предложения и багрепорты',
+      footer: '🐾 FurFlix — неофициальный клиент FurAffinity для Android',
+      jar: 'Открыть Монобанку', cur_uah: 'UAH (Гривна)', cur_usd: 'USD (Доллар)', cur_eur: 'EUR (Евро)',
+      usdt_sub: 'Адрес кошелька Tron Network', btc_sub: 'Адрес BTC Кошелька',
+      toastLang: 'Язык изменён: RU', copied: 'скопирован!', discordCopied: 'Discord: furrych скопирован!'
+    },
+    ua: {
+      navFeat: '01. Функції', navWhy: '02. Чому', navScr: '03. Екрани', navSup: '04. Підтримка', navFaq: '05. FAQ',
+      eyebrow: 'FurAffinity Android Клієнт', title1: 'Твій FurAffinity', title2: 'яким він має бути',
+      lede: 'Нативний Android-додаток для FurAffinity — плавні свайпи, швидкий пінч-зум, розумний пошук та персональна стрічка підписок.',
+      btnDownload: 'Завантажити APK', btnSupport: '❤️ Підтримати',
+      stat1t: 'Android 8.0+', stat1d: 'API 26 та вище', stat2t: '8 Тем', stat2d: 'Іконки на вибір',
+      stat3t: '3 Мови', stat3d: 'UA · EN · RU', stat4t: 'SFW / NSFW', stat4d: 'Гнучка фільтрація',
+      sc_t: '03 — Екрани', sc_h: 'Інтерактивний огляд', sc_d: 'Виберіть екран зліва для попереднього перегляду',
+      b0t: 'Стрічка', b0d: 'Роботи, сітка або список', b1t: 'Нове', b1d: 'Свіжі роботи',
+      b3t: 'Перегляд', b3d: 'Зум, теги, опис', b4t: 'Профіль', b4d: 'Галерея, фаворити',
+      b5t: 'Пошук', b5d: 'Фільтри та чіпи', b6t: 'Налаштування', b6d: 'Теми, іконки, мова',
+      b7t: 'Підписки', b7d: 'Улюблені автори',
+      nb_0: 'Стрічка', nb_1: 'Нове', nb_5: 'Пошук', nb_4: 'Профіль',
+      sc_login: 'Вхід до FurAffinity', sc_login_d: 'Безпечний вхід через WebView',
+      feat_t: '01 — Функціонал', feat_h: 'Усе, що потрібно для стрічки',
+      ft1t: 'Стрічка', ft1d: 'Нескінченний скрол, сітка або список. Персональна стрічка підписок.',
+      ft2t: 'Пошук', ft2d: 'Повнотекстовий, за тегами, з автокомплітом. Фільтри за рейтингом та типом.',
+      ft3t: 'Перегляд', ft3d: 'Свайп між постами, пінч-зум, опис та коментарі.',
+      ft4t: 'Профілі', ft4d: 'Галерея, фаворити, підписки. Один тап для лайку та фоллоу.',
+      ft5t: 'Завантаження', ft5d: 'Менеджер завантажень з метаданими. Повернення до посту та автора.',
+      ft6t: 'Фільтри', ft6d: 'Глушіння слів, блекліст тегів. Перемикач NSFW.',
+      ft7t: 'Теми та іконки', ft7d: '8 кольорових тем, 8 іконок. Зміна без перевстановлення.',
+      ft8t: 'Мови', ft8d: 'English, Русский, Українська. Миттєве перемикання.',
+      comp_eyebrow: '02 — Чому не браузер', comp_title: 'Порівняння: Браузер vs FurFlix',
+      th_param: 'Параметр', th_browser: 'Браузер', th_app: 'FurFlix App 🐾',
+      r1_p: 'Швидкість', r1_b: 'Повільне завантаження HTML', r1_f: 'Нативний UI без затримок',
+      r2_p: 'Жести', r2_b: 'Стандартний браузерний скрол', r2_f: 'Свайпи між постами, Pinch-Zoom',
+      r3_p: 'Завантаження', r3_b: 'Збереження через браузер, без зв\'язку з постом', r3_f: 'Вбудований менеджер з поверненням до автора і посту',
+      r4_p: 'Оформлення', r4_b: 'Стандартна тема сайту', r4_f: '8 тем + 8 іконок лаунчера',
+      r5_p: 'Фільтри', r5_b: 'Складний пошук у налаштуваннях акаунту', r5_f: 'Перемикач NSFW в один тап, зручний блекліст',
+      faq_eye: '05 — Питання і Відповіді', faq_h: 'Часті запитання',
+      q1: 'Чи безпечно входити через FurFlix?', a1: 'Так. Авторизація відбувається через офіційний вбудований WebView FurAffinity. Паролі не передаються стороннім серверам і зберігаються локально в зашифрованих файлах cookie.',
+      q2: 'Чи потрібен Root на телефоні?', a2: 'Ні. FurFlix працює на будь-яких пристроях з Android 8.0 (Oreo) і новіше.',
+      q3: 'Чи підтримується фільтр NSFW контенту?', a3: 'Так. Показ рейтингу контенту (General / Mature / Adult) синхронізується з налаштуваннями акаунту FurAffinity та перемикається в налаштуваннях додатку.',
+      q4: 'Додаток безкоштовний? Чи є реклама?', a4: 'FurFlix повністю безкоштовний і не містить реклами або прихованих підписок. Проєкт створюється незалежним розробником.',
+      sup_eye: '04 — Підтримати', sup_h: 'Проєкт живе на ентузіазмі', sup_d: 'Один розробник у вільний час. Якщо FurFlix зекономив ваш час — підтримайте розвиток проєкту.',
+      sup_act_m: 'Показати реквізити', sup_act_c: 'Адреса гаманця', sup_act_c2: 'Адреса гаманця',
+      usdt_d: 'Мережа Tron (TRX)', btc_d: 'Класичний переказ BTC',
+      con_eye: 'Зв\'язок із розробником', con_h: 'Пропозиції та багрепорти',
+      footer: '🐾 FurFlix — неофіційний клієнт FurAffinity для Android',
+      jar: 'Відкрити Монобанку', cur_uah: 'UAH (Гривня)', cur_usd: 'USD (Долар)', cur_eur: 'EUR (Євро)',
+      usdt_sub: 'Адреса гаманця Tron Network', btc_sub: 'Адреса BTC гаманця',
+      toastLang: 'Мову змінено: UA', copied: 'скопійовано!', discordCopied: 'Discord: furrych скопійовано!'
+    }
+  };
+
+  // Screen selection inside Phone Showcase
+  let currentActiveScreen = 0;
+  function selectScreen(index) {
+    currentActiveScreen = index;
+    const display = document.getElementById('phone-display');
+    const screens = getPhoneScreens();
+    display.style.opacity = '0';
+    setTimeout(() => {
+      display.innerHTML = screens[index];
+      display.style.opacity = '1';
+    }, 300);
+    
+    const btns = document.querySelectorAll('.screen-nav-btn');
+    btns.forEach(btn => {
+      const btnIdx = parseInt(btn.getAttribute('data-index'));
+      const lbl = btn.querySelector('.num-lbl');
+      
+      // Reset all to inactive classes
+      btn.className = 'screen-nav-btn w-64 p-3.5 rounded-2xl border border-white/5 hover:border-white/20 bg-[#141024]/50 hover:bg-white/5 flex items-center text-left transition-all duration-300 hover:translate-x-3 group';
+      if(lbl) lbl.className = 'font-mono-code text-xs text-[var(--text-muted)] group-hover:text-white transition-colors num-lbl';
+      
+      if (btnIdx === index) {
+        // Apply active classes
+        btn.className = 'screen-nav-btn w-64 p-3.5 rounded-2xl border border-[var(--accent)] bg-white/10 flex items-center text-left transition-all duration-300 shadow-[0_0_15px_var(--accent-glow)] translate-x-3 group';
+        if(lbl) lbl.className = 'font-mono-code text-xs font-bold text-[var(--accent)] transition-colors num-lbl';
+      }
+    });
+  }
+
+  // Language switcher logic
+  function setLanguage(lang) {
+    currentLang = lang;
+    const t = translations[lang];
+    if(!t) return;
+    
+    // Auto-replace all data-i18n elements
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const key = el.getAttribute('data-i18n');
+      if (t[key]) {
+        el.innerHTML = t[key];
+      }
+    });
+
+    ['ru', 'en', 'ua'].forEach(l => {
+      const b = document.getElementById(`lang-${l}`);
+      if(l === lang) {
+        b.className = 'px-2 py-0.5 rounded bg-[var(--accent)] text-slate-950 font-bold transition-all';
+      } else {
+        b.className = 'px-2 py-0.5 rounded text-[var(--text-dim)] hover:text-white transition-all';
+      }
+    });
+    
+    showToast(t.toastLang);
+    
+    // Re-render screen to apply translations
+    selectScreen(currentActiveScreen);
+    
+    // If modal is open, re-render it
+    const modal = document.getElementById('supportModal');
+    if (!modal.classList.contains('opacity-0') && window.currentModalKey) {
+        openSupportModal(window.currentModalKey);
+    }
+  }
+
+  // FAQ Accordion Logic
+  function toggleFaq(btn) {
+    const item = btn.closest('.faq-item');
+    const wrap = item.querySelector('.faq-content-wrap');
+    const icon = item.querySelector('.faq-icon');
+    
+    // Close other open FAQs
+    document.querySelectorAll('.faq-item').forEach(other => {
+      if (other !== item) {
+        other.querySelector('.faq-content-wrap').classList.remove('grid-rows-[1fr]');
+        other.querySelector('.faq-content-wrap').classList.add('grid-rows-[0fr]');
+        other.querySelector('.faq-icon').classList.remove('rotate-180', 'text-[var(--accent)]');
+      }
+    });
+
+    // Toggle current
+    if (wrap.classList.contains('grid-rows-[1fr]')) {
+      wrap.classList.remove('grid-rows-[1fr]');
+      wrap.classList.add('grid-rows-[0fr]');
+      icon.classList.remove('rotate-180', 'text-[var(--accent)]');
+    } else {
+      wrap.classList.remove('grid-rows-[0fr]');
+      wrap.classList.add('grid-rows-[1fr]');
+      icon.classList.add('rotate-180', 'text-[var(--accent)]');
+    }
+  }
+
+  // Support Modal logic
+  function openSupportModal(key) {
+    window.currentModalKey = key;
+    const data = getSupportData()[key];
+    document.getElementById('modal-icon').textContent = data.icon;
+    document.getElementById('modal-title').textContent = data.title;
+    document.getElementById('modal-sub').textContent = data.sub;
+    
+    const container = document.getElementById('modal-addresses-container');
+    container.innerHTML = '';
+    data.addresses.forEach(item => {
+      container.innerHTML += `
+        <div class="bg-black/40 border border-white/5 rounded-2xl p-3 flex items-center justify-between gap-3 group">
+          <div class="pr-2">
+            <div class="text-[10px] font-mono-code text-[var(--accent)] uppercase tracking-wider mb-1">${item.label}</div>
+            <div class="font-mono-code text-xs text-white/90 select-all font-bold tracking-widest break-all">${item.val}</div>
+          </div>
+          <button onclick="copySpecificAddress('${item.val}', '${item.label.split(' ')[0]}')" class="w-10 h-10 rounded-xl bg-white/5 hover:bg-[var(--accent)] text-white/50 hover:text-[var(--accent)] transition-all flex items-center justify-center shrink-0">
+            <i class="fa-regular fa-copy"></i>
+          </button>
+        </div>
+      `;
+    });
+
+    const jarBtn = document.getElementById('jarBtn');
+    if (data.jar) {
+      jarBtn.classList.remove('hidden');
+      jarBtn.classList.add('flex');
+      jarBtn.href = data.jar;
+    } else {
+      jarBtn.classList.add('hidden');
+      jarBtn.classList.remove('flex');
+    }
+
+    const modal = document.getElementById('supportModal');
+    const content = document.getElementById('supportModalContent');
+    modal.classList.remove('opacity-0', 'pointer-events-none');
+    content.classList.remove('scale-95');
+    content.classList.add('scale-100');
+  }
+
+  function closeSupportModal() {
+    window.currentModalKey = null;
+    const modal = document.getElementById('supportModal');
+    const content = document.getElementById('supportModalContent');
+    modal.classList.add('opacity-0', 'pointer-events-none');
+    content.classList.remove('scale-100');
+    content.classList.add('scale-95');
+  }
+
+  function copySpecificAddress(val, label) {
+    navigator.clipboard.writeText(val).then(() => {
+      showToast(`${label} ${translations[currentLang].copied}`);
+    }).catch(() => {
+      showToast(`${label} ${translations[currentLang].copied}`);
+    });
+  }
+
+  // Keyboard escape listener
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      closeSupportModal();
+    }
+  });
+
+  // Custom Toast Logic
+  function showToast(msg) {
+    const toast = document.getElementById('toast');
+    document.getElementById('toast-text').textContent = msg;
+    
+    // Show
+    toast.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-4');
+    
+    // Hide after 3s
+    clearTimeout(window.toastTimer);
+    window.toastTimer = setTimeout(() => {
+      toast.classList.add('opacity-0', 'pointer-events-none', 'translate-y-4');
+    }, 3000);
+  }
+
+  // Initialize
+  selectScreen(0);
+  
+  window.addEventListener('DOMContentLoaded', () => {
+    
+    // Initialize Particles Background
+    if (typeof tsParticles !== 'undefined') {
+      tsParticles.load("tsparticles", {
+        particles: {
+          number: { value: 50, density: { enable: true, value_area: 800 } },
+          color: { value: ["#b794f4", "#a78bfa", "#d6bcfa", "#ffffff"] },
+          shape: { type: "circle" },
+          opacity: { value: 0.6, random: true, anim: { enable: true, speed: 1, opacity_min: 0.1, sync: false } },
+          size: { value: 3, random: true, anim: { enable: true, speed: 2, size_min: 0.1, sync: false } },
+          move: { enable: true, speed: 0.8, direction: "top", random: true, straight: false, out_mode: "out", bounce: false }
+        },
+        interactivity: {
+          detect_on: "window",
+          events: { onhover: { enable: true, mode: "bubble" }, resize: true },
+          modes: { bubble: { distance: 200, size: 6, duration: 2, opacity: 0.8 } }
+        },
+        retina_detect: true
+      });
+    }
+  });
+</script>
+
+</body>
+</html>
