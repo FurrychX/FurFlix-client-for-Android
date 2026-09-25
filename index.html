@@ -5,6 +5,82 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FurFlix — Native FurAffinity Client for Android</title>
 
+<!-- ============ SEO ============ -->
+<meta name="description" content="FurFlix is a fast unofficial FurAffinity client for Android built with Jetpack Compose and Material 3. Tag search with 200K+ offline tags, offline downloads, watchlist, 8 themes and EN/RU/UA languages.">
+<meta name="author" content="FurrychX">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+<link rel="canonical" href="https://furrychx.github.io/FurFlix-client-for-Android/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="FurFlix">
+<meta property="og:title" content="FurFlix — Native FurAffinity Client for Android">
+<meta property="og:description" content="Unofficial FurAffinity client for Android. Jetpack Compose, Material 3, tag search with 200K+ offline tags, offline downloads, 8 themes, EN/RU/UA.">
+<meta property="og:url" content="https://furrychx.github.io/FurFlix-client-for-Android/">
+<meta property="og:image" content="https://furrychx.github.io/FurFlix-client-for-Android/screenshots/icon.png">
+<meta property="og:image:width" content="512">
+<meta property="og:image:height" content="512">
+<meta property="og:image:alt" content="FurFlix app icon">
+<meta property="og:locale" content="en_US">
+
+<!-- Twitter / X card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="FurFlix — Native FurAffinity Client for Android">
+<meta name="twitter:description" content="Unofficial FurAffinity client for Android. Jetpack Compose, Material 3, tag search, offline downloads, EN/RU/UA.">
+<meta name="twitter:image" content="https://furrychx.github.io/FurFlix-client-for-Android/screenshots/icon.png">
+<meta name="twitter:image:alt" content="FurFlix app icon">
+
+<!-- Structured data -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "SoftwareApplication",
+      "name": "FurFlix",
+      "alternateName": "FurFlix Android Client",
+      "url": "https://furrychx.github.io/FurFlix-client-for-Android/",
+      "installUrl": "https://github.com/FurrychX/FurFlix-client-for-Android/releases",
+      "downloadUrl": "https://github.com/FurrychX/FurFlix-client-for-Android/releases",
+      "softwareVersion": "1.0",
+      "operatingSystem": "Android 8.0 (API 26) and later",
+      "applicationCategory": "MultimediaApplication",
+      "applicationSubCategory": "Art &amp; Photo viewer",
+      "inLanguage": ["en", "ru", "uk"],
+      "description": "Unofficial FurAffinity client for Android. Jetpack Compose and Material 3 UI, glassmorphism design, tag search with 200K+ offline tags, offline downloads, artist profiles, watchlist, 8 colour themes and 8 app icon styles.",
+      "featureList": [
+        "Infinite-scroll submission feed",
+        "Full-text and tag search with 200K+ offline tags",
+        "Pinch-to-zoom image viewer with swipe navigation",
+        "Artist profiles, favorites and watchlist",
+        "Offline downloads with metadata",
+        "Muted words and NSFW toggle",
+        "8 colour themes and 8 app icon styles",
+        "English, Russian and Ukrainian languages"
+      ],
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "author": {
+        "@type": "Person",
+        "name": "FurrychX",
+        "url": "https://github.com/FurrychX"
+      },
+      "codeRepository": "https://github.com/FurrychX/FurFlix-client-for-Android"
+    },
+    {
+      "@type": "WebSite",
+      "name": "FurFlix",
+      "url": "https://furrychx.github.io/FurFlix-client-for-Android/",
+      "inLanguage": "en"
+    }
+  ]
+}
+</script>
+<!-- ============ /SEO ============ -->
+
 <!-- Tailwind CSS -->
 <script src="https://cdn.tailwindcss.com"></script>
 
@@ -775,6 +851,11 @@
 <!-- Footer -->
 <footer class="mt-8 mb-4 text-center text-xs text-[var(--text-muted)] max-w-5xl w-full">
   <div data-i18n="footer">🐾 FurFlix — unofficial FurAffinity client for Android</div>
+  <nav aria-label="Footer" class="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 font-mono-code text-xs">
+    <a href="https://github.com/FurrychX/FurFlix-client-for-Android" rel="noopener nofollow" class="hover:text-[var(--accent)] transition-colors"><i class="fa-brands fa-github mr-1"></i><span data-i18n="srcCode">Source code</span></a>
+    <a href="https://github.com/FurrychX/FurFlix-client-for-Android/releases" rel="noopener nofollow" class="hover:text-[var(--accent)] transition-colors"><i class="fa-solid fa-tag mr-1"></i><span data-i18n="relNotes">Releases</span></a>
+    <a href="https://github.com/FurrychX/FurFlix-client-for-Android/blob/main/README_RU.md" rel="noopener nofollow" class="hover:text-[var(--accent)] transition-colors"><i class="fa-solid fa-book-open mr-1"></i><span data-i18n="langDocs">README</span></a>
+  </nav>
 </footer>
 
 <!-- MODAL 1: DONATION / SUPPORT MODAL -->
@@ -912,6 +993,7 @@
       usdt_d: 'Tron network (TRX)', btc_d: 'Classic BTC transfer',
       con_eye: 'Contact Developer', con_h: 'Suggestions and Bug Reports',
       footer: '🐾 FurFlix — unofficial FurAffinity client for Android',
+      srcCode: 'Source code', relNotes: 'Releases', langDocs: 'README',
       jar: 'Open Monobank Jar', cur_uah: 'UAH (Hryvnia)', cur_usd: 'USD (Dollar)', cur_eur: 'EUR (Euro)',
       usdt_sub: 'Tron Network Wallet Address', btc_sub: 'BTC Wallet Address',
       toastLang: 'Language changed to: EN', copied: 'copied!', discordCopied: 'Discord: furrych copied!'
@@ -956,6 +1038,7 @@
       usdt_d: 'Сеть Tron (TRX)', btc_d: 'Классический BTC перевод',
       con_eye: 'Связь с разработчиком', con_h: 'Предложения и багрепорты',
       footer: '🐾 FurFlix — неофициальный клиент FurAffinity для Android',
+      srcCode: 'Исходный код', relNotes: 'Релизы', langDocs: 'README',
       jar: 'Открыть Монобанку', cur_uah: 'UAH (Гривна)', cur_usd: 'USD (Доллар)', cur_eur: 'EUR (Евро)',
       usdt_sub: 'Адрес кошелька Tron Network', btc_sub: 'Адрес BTC Кошелька',
       toastLang: 'Язык изменён: RU', copied: 'скопирован!', discordCopied: 'Discord: furrych скопирован!'
@@ -1000,6 +1083,7 @@
       usdt_d: 'Мережа Tron (TRX)', btc_d: 'Класичний переказ BTC',
       con_eye: 'Зв\'язок із розробником', con_h: 'Пропозиції та багрепорти',
       footer: '🐾 FurFlix — неофіційний клієнт FurAffinity для Android',
+      srcCode: 'Вихідний код', relNotes: 'Релізи', langDocs: 'README',
       jar: 'Відкрити Монобанку', cur_uah: 'UAH (Гривня)', cur_usd: 'USD (Долар)', cur_eur: 'EUR (Євро)',
       usdt_sub: 'Адреса гаманця Tron Network', btc_sub: 'Адреса BTC гаманця',
       toastLang: 'Мову змінено: UA', copied: 'скопійовано!', discordCopied: 'Discord: furrych скопійовано!'

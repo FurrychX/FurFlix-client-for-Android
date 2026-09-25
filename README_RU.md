@@ -16,6 +16,10 @@
 
 <p align="center"><a href="README.md">English</a> · <a href="README_RU.md">Русский</a> · <a href="README_UA.md">Українська</a></p>
 
+<p align="center">
+  <sub><b>Ключевые слова:</b> фурраффинити приложение · клиент fur affinity · furaffinity apk · фурри клиент андроид · просмотр фур артов · аниме фурри приложение</sub>
+</p>
+
 Неофициальный клиент FurAffinity для Android — быстрый, современный, на Jetpack Compose.
 
 > Не связан с FurAffinity или IMVU Inc.

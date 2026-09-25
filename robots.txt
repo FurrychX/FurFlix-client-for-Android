@@ -1,0 +1,8 @@
+# robots.txt — https://furrychx.github.io/FurFlix-client-for-Android/
+# Everything on the landing site is public and meant to be indexed.
+# Updated: 2026-09-25
+
+User-agent: *
+Allow: /
+
+Sitemap: https://furrychx.github.io/FurFlix-client-for-Android/sitemap.xml
