@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FurFlix — Native FurAffinity Client for Android</title>
+<title>FurFlix — FurAffinity App for Android</title>
 
 <!-- ============ SEO ============ -->
-<meta name="description" content="FurFlix is a fast unofficial FurAffinity client for Android built with Jetpack Compose and Material 3. Tag search with 200K+ offline tags, offline downloads, watchlist, 8 themes and EN/RU/UA languages.">
+<meta name="description" content="Download the FurFlix APK for Android 8.0+. Browse FurAffinity, search by tag, follow artists, and save images for offline viewing.">
 <meta name="author" content="FurrychX">
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
 <meta name="google-site-verification" content="7L9G78ruIL7vV9USPjgC9zcqMdsQwbAFF2yxGQT6Fek">
@@ -15,7 +15,7 @@
 <!-- Open Graph -->
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="FurFlix">
-<meta property="og:title" content="FurFlix — Native FurAffinity Client for Android">
+<meta property="og:title" content="FurFlix — FurAffinity App for Android">
 <meta property="og:description" content="Unofficial FurAffinity client for Android. Jetpack Compose, Material 3, tag search with 200K+ offline tags, offline downloads, 8 themes, EN/RU/UA.">
 <meta property="og:url" content="https://furrychx.github.io/FurFlix-client-for-Android/">
 <meta property="og:image" content="https://furrychx.github.io/FurFlix-client-for-Android/screenshots/icon.png">
@@ -26,7 +26,7 @@
 
 <!-- Twitter / X card -->
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="FurFlix — Native FurAffinity Client for Android">
+<meta name="twitter:title" content="FurFlix — FurAffinity App for Android">
 <meta name="twitter:description" content="Unofficial FurAffinity client for Android. Jetpack Compose, Material 3, tag search, offline downloads, EN/RU/UA.">
 <meta name="twitter:image" content="https://furrychx.github.io/FurFlix-client-for-Android/screenshots/icon.png">
 <meta name="twitter:image:alt" content="FurFlix app icon">
@@ -400,13 +400,13 @@
 
   <!-- Main Headline -->
   <h1 class="font-serif-heading text-4xl sm:text-5xl md:text-6xl tracking-tight leading-[1.08] font-normal mb-4 text-white">
-    <span id="hero-title-1" data-i18n="title1">Your FurAffinity</span><br>
-    <span id="hero-title-2" data-i18n="title2" class="italic text-[var(--accent-hover)]">the way it should be</span>
+    <span id="hero-title-1" data-i18n="title1">FurFlix</span><br>
+    <span id="hero-title-2" data-i18n="title2" class="italic text-[var(--accent-hover)]">FurAffinity app for Android</span>
   </h1>
 
   <!-- Lede Subtitle -->
   <p id="hero-lede" data-i18n="lede" class="max-w-xl text-[var(--text-dim)] text-base sm:text-lg leading-relaxed mb-8">
-    Native Android app for FurAffinity — fluid swipe gestures, snappy pinch zoom, smart full-text search, and your custom sub feed.
+    FurFlix is an unofficial FurAffinity app for Android. Browse artwork, search by tag, follow artists, and save images to view offline.
   </p>
 
   <!-- CTA Action Buttons -->
@@ -419,6 +419,11 @@
       <span id="btn-support-project" data-i18n="btnSupport">❤️ Support Project</span>
     </a>
   </div>
+
+  <section aria-labelledby="install-heading" class="w-full max-w-xl text-center mb-8">
+    <h2 id="install-heading" data-i18n="installHeading" class="text-sm font-semibold text-white">Install or update FurFlix on Android 8.0+</h2>
+    <p data-i18n="installInstructions" class="mt-2 text-sm leading-relaxed text-[var(--text-dim)]">On the latest release page, download the .apk file under Assets and open it on your phone. If FurFlix is already installed, tap Update to keep your app data.</p>
+  </section>
 
   <!-- Quick Feature Pills Stats -->
   <div class="w-full max-w-2xl grid grid-cols-2 sm:grid-cols-4 gap-2 mb-8">
@@ -956,9 +961,11 @@
   const translations = {
     en: {
       navFeat: '01. Features', navWhy: '02. Why', navScr: '03. Screens', navSup: '04. Support', navFaq: '05. FAQ',
-      eyebrow: 'FurAffinity Android Client', title1: 'Your FurAffinity', title2: 'the way it should be',
-      lede: 'Native Android app for FurAffinity — fluid swipe gestures, snappy pinch zoom, smart full-text search, and your custom sub feed.',
+      eyebrow: 'FurAffinity Android Client', title1: 'FurFlix', title2: 'FurAffinity app for Android',
+      lede: 'FurFlix is an unofficial FurAffinity app for Android. Browse artwork, search by tag, follow artists, and save images to view offline.',
       btnDownload: 'Download APK', btnSupport: '❤️ Support Project',
+      installHeading: 'Install or update FurFlix on Android 8.0+',
+      installInstructions: 'On the latest release page, download the .apk file under Assets and open it on your phone. If FurFlix is already installed, tap Update to keep your app data.',
       stat1t: 'Android 8.0+', stat1d: 'API 26 and higher', stat2t: '8 Themes', stat2d: 'Custom icons',
       stat3t: '3 Languages', stat3d: 'EN · RU · UA', stat4t: 'SFW / NSFW', stat4d: 'Flexible filtering',
       sc_t: '03 — Screens', sc_h: 'Interactive Preview', sc_d: 'Select a screen on the left to preview',
@@ -1001,9 +1008,11 @@
     },
     ru: {
       navFeat: '01. Функции', navWhy: '02. Почему', navScr: '03. Экраны', navSup: '04. Поддержка', navFaq: '05. FAQ',
-      eyebrow: 'FurAffinity Android Клиент', title1: 'Твой FurAffinity', title2: 'каким он должен быть',
-      lede: 'Нативное Android-приложение для FurAffinity — плавные свайпы, быстрый пинч-зум, умный полнотекстовый поиск и персональный фид подписок.',
+      eyebrow: 'FurAffinity Android Клиент', title1: 'FurFlix', title2: 'Приложение FurAffinity для Android',
+      lede: 'FurFlix — неофициальное приложение FurAffinity для Android. Просматривайте работы, ищите по тегам, подписывайтесь на авторов и сохраняйте изображения для просмотра офлайн.',
       btnDownload: 'Скачать APK', btnSupport: '❤️ Поддержать',
+      installHeading: 'Установка и обновление FurFlix на Android 8.0+',
+      installInstructions: 'На странице последнего релиза скачайте файл .apk в разделе Assets и откройте его на телефоне. Если FurFlix уже установлен, нажмите «Обновить», чтобы сохранить данные приложения.',
       stat1t: 'Android 8.0+', stat1d: 'API 26 и выше', stat2t: '8 Тем', stat2d: 'Иконки на выбор',
       stat3t: '3 Языка', stat3d: 'RU · EN · UA', stat4t: 'SFW / NSFW', stat4d: 'Гибкая фильтрация',
       sc_t: '03 — Экраны', sc_h: 'Интерактивный обзор', sc_d: 'Выберите экран слева для предпросмотра',
@@ -1046,9 +1055,11 @@
     },
     ua: {
       navFeat: '01. Функції', navWhy: '02. Чому', navScr: '03. Екрани', navSup: '04. Підтримка', navFaq: '05. FAQ',
-      eyebrow: 'FurAffinity Android Клієнт', title1: 'Твій FurAffinity', title2: 'яким він має бути',
-      lede: 'Нативний Android-додаток для FurAffinity — плавні свайпи, швидкий пінч-зум, розумний пошук та персональна стрічка підписок.',
+      eyebrow: 'FurAffinity Android Клієнт', title1: 'FurFlix', title2: 'Застосунок FurAffinity для Android',
+      lede: 'FurFlix — неофіційний застосунок FurAffinity для Android. Переглядайте роботи, шукайте за тегами, підписуйтеся на авторів і зберігайте зображення для перегляду офлайн.',
       btnDownload: 'Завантажити APK', btnSupport: '❤️ Підтримати',
+      installHeading: 'Встановлення й оновлення FurFlix на Android 8.0+',
+      installInstructions: 'На сторінці останнього релізу завантажте файл .apk у розділі Assets і відкрийте його на телефоні. Якщо FurFlix уже встановлено, натисніть «Оновити», щоб зберегти дані застосунку.',
       stat1t: 'Android 8.0+', stat1d: 'API 26 та вище', stat2t: '8 Тем', stat2d: 'Іконки на вибір',
       stat3t: '3 Мови', stat3d: 'UA · EN · RU', stat4t: 'SFW / NSFW', stat4d: 'Гнучка фільтрація',
       sc_t: '03 — Екрани', sc_h: 'Інтерактивний огляд', sc_d: 'Виберіть екран зліва для попереднього перегляду',
