@@ -30,6 +30,7 @@
     <string name="theme_gold">Золотая</string>
     <string name="theme_pride">Прайд</string>
     <string name="theme_neon_galaxy">Неоновая галактика</string>
+    <string name="theme_netflix">Netflix</string>
     <string name="theme_summer_sky">Летнее небо</string>
     <string name="theme_dark">Тёмная</string>
 
@@ -78,7 +79,7 @@
     <string name="post_meta_info">Мета-инфо</string>
     <string name="post_comments">Комментарии</string>
     
-    <string name="user_watching">Отслеживаешь</string>
+    <string name="user_watching">Следит</string>
     <string name="user_watch">Следить</string>
     <string name="user_gallery">Галерея</string>
     <string name="user_watchers">Подписчики</string>
@@ -162,4 +163,19 @@
     <string name="meta_file_size">Размер</string>
     <string name="meta_file_type">Формат</string>
     <string name="meta_date">Дата</string>
+
+    <!-- Updater -->
+    <string name="update_available_title">Доступна новая версия!</string>
+    <string name="update_download_button">Скачать</string>
+    <string name="update_skip_button">Пропустить</string>
+    <string name="update_checking">Проверка обновлений...</string>
+    <string name="update_latest">У вас установлена последняя версия.</string>
+    <string name="update_error">Ошибка при проверке обновлений.</string>
+    <string name="update_check_button">Проверить обновления</string>
+    <string name="update_downloading">Скачивание обновления...</string>
+    <string name="post_detail_tags">Теги</string>
+    <string name="action_retry">Повторить</string>
+    <string name="home_empty_feed">Не удалось загрузить ленту. Нажмите, чтобы повторить.</string>
+    <string name="cf_checking">Проверка соединения с FurAffinity...</string>
+    <string name="cf_dialog_title">Проверка FurAffinity</string>
 </resources>

@@ -30,6 +30,7 @@
     <string name="theme_gold">Золота</string>
     <string name="theme_pride">Прайд</string>
     <string name="theme_neon_galaxy">Неонова галактика</string>
+    <string name="theme_netflix">Netflix</string>
     <string name="theme_summer_sky">Літнє небо</string>
     <string name="theme_dark">Темна</string>
 
@@ -78,7 +79,7 @@
     <string name="post_meta_info">Мета-інфо</string>
     <string name="post_comments">Коментарі</string>
     
-    <string name="user_watching">Відстежуєш</string>
+    <string name="user_watching">Стежить</string>
     <string name="user_watch">Стежити</string>
     <string name="user_gallery">Галерея</string>
     <string name="user_watchers">Підписники</string>
@@ -162,4 +163,14 @@
     <string name="login_password">Пароль</string>
     <string name="login_button">Увійти</string>
     <string name="login_browser">Увійти через браузер</string>
+
+    <!-- Updater -->
+    <string name="update_available_title">Доступна нова версія!</string>
+    <string name="update_download_button">Завантажити</string>
+    <string name="update_skip_button">Пропустити</string>
+    <string name="update_checking">Перевірка оновлень...</string>
+    <string name="update_latest">У вас встановлена остання версія.</string>
+    <string name="update_error">Помилка перевірки оновлень.</string>
+    <string name="update_check_button">Перевірити оновлення</string>
+    <string name="update_downloading">Завантаження оновлення...</string>
 </resources>

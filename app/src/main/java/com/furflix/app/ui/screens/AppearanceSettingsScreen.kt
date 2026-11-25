@@ -1,5 +1,8 @@
 package com.furflix.app.ui.screens
 
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateDpAsState
@@ -41,6 +44,20 @@ import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 import kotlinx.coroutines.launch
 
+/**
+ * LocalContext.current в Compose обычно возвращает ContextThemeWrapper,
+ * а не саму Activity. Для startActivity() из foreground нам нужна именно
+ * Activity, поэтому разворачиваем цепочку ContextWrapper.
+ */
+private fun Context.findActivity(): Activity? {
+    var ctx = this
+    while (ctx is ContextWrapper) {
+        if (ctx is Activity) return ctx
+        ctx = ctx.baseContext
+    }
+    return null
+}
+
 @Composable
 fun AppearanceSettingsScreen(
     onBack: () -> Unit
@@ -48,12 +65,46 @@ fun AppearanceSettingsScreen(
     val context = LocalContext.current
     val repository = remember { FurRepository.getInstance(context) }
     val scope = rememberCoroutineScope()
-    
+
     val themePref by repository.themeFlow.collectAsState(initial = ThemePreference.DEFAULT)
     val appIcon by repository.appIconFlow.collectAsState(initial = AppIcon.DARK)
     val isGrid by repository.isGridFlow.collectAsState(initial = true)
 
     val hazeState = remember { HazeState() }
+
+    // Иконка, которую пользователь выбрал, но ещё не подтвердил применение.
+    // Диалог подтверждения показывается, пока это значение не null.
+    var pendingIconChange by remember { mutableStateOf<AppIcon?>(null) }
+
+    pendingIconChange?.let { newIcon ->
+        AlertDialog(
+            onDismissRequest = { pendingIconChange = null },
+            title = { Text(stringResource(R.string.settings_app_icon)) },
+            text = { Text(stringResource(R.string.settings_app_icon_restart_confirm)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    pendingIconChange = null
+                    scope.launch {
+                        repository.saveAppIcon(newIcon)
+                        // applyIconAndRestart выключает остальные алиасы, включает
+                        // новый и перезапускает приложение управляемым образом —
+                        // должен вызываться последним, так как убивает процесс.
+                        val activity = context.findActivity()
+                        if (activity != null) {
+                            IconManager.applyIconAndRestart(activity, newIcon)
+                        }
+                    }
+                }) {
+                    Text(stringResource(R.string.action_confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingIconChange = null }) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -77,7 +128,7 @@ fun AppearanceSettingsScreen(
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            
+
             // --- Theme Selection ---
             Text(
                 text = stringResource(R.string.settings_theme),
@@ -85,7 +136,7 @@ fun AppearanceSettingsScreen(
                 color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.Bold
             )
-            
+
             val listState = rememberLazyListState()
 
             LaunchedEffect(themePref) {
@@ -139,7 +190,7 @@ fun AppearanceSettingsScreen(
                                     .clip(CircleShape)
                                     .background(theme.color)
                             )
-                            
+
                             if (isSelected) {
                                 Spacer(modifier = Modifier.width(10.dp))
                                 Text(
@@ -153,7 +204,7 @@ fun AppearanceSettingsScreen(
                     }
                 }
             }
-            
+
             Spacer(modifier = Modifier.height(24.dp))
 
             Column {
@@ -270,58 +321,58 @@ fun AppearanceSettingsScreen(
             }
 
 
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                val defaultTab by repository.defaultTabFlow.collectAsState(initial = 0)
-                
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Home, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column {
-                            Text(
-                                stringResource(R.string.settings_startup_tab),
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Text(
-                                stringResource(R.string.settings_startup_tab_desc),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+            Spacer(modifier = Modifier.height(16.dp))
+
+            val defaultTab by repository.defaultTabFlow.collectAsState(initial = 0)
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Home, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            stringResource(R.string.settings_startup_tab),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            stringResource(R.string.settings_startup_tab_desc),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
-                
-                Spacer(modifier = Modifier.height(8.dp))
-                
-                Row(
-                    modifier = Modifier.fillMaxWidth().height(48.dp).clip(RoundedCornerShape(24.dp)).background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    val tabs = listOf(stringResource(R.string.nav_tab_browse) to 0, stringResource(R.string.nav_tab_latest) to 1, stringResource(R.string.nav_tab_search) to 2, stringResource(R.string.nav_tab_profile) to 3)
-                    tabs.forEach { (name, index) ->
-                        val isSelected = defaultTab == index
-                        val bgColor by animateColorAsState(if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent)
-                        val textColor by animateColorAsState(if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface)
-                        
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxHeight()
-                                .clip(RoundedCornerShape(24.dp))
-                                .background(bgColor)
-                                .clickable { scope.launch { repository.saveDefaultTab(index) } },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(name, color = textColor, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
-                        }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth().height(48.dp).clip(RoundedCornerShape(24.dp)).background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                val tabs = listOf(stringResource(R.string.nav_tab_browse) to 0, stringResource(R.string.nav_tab_latest) to 1, stringResource(R.string.nav_tab_search) to 2, stringResource(R.string.nav_tab_profile) to 3)
+                tabs.forEach { (name, index) ->
+                    val isSelected = defaultTab == index
+                    val bgColor by animateColorAsState(if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent)
+                    val textColor by animateColorAsState(if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface)
+
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .clip(RoundedCornerShape(24.dp))
+                            .background(bgColor)
+                            .clickable { scope.launch { repository.saveDefaultTab(index) } },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(name, color = textColor, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
                     }
                 }
+            }
 
             // --- App Icon Selection ---
             Spacer(modifier = Modifier.height(16.dp))
@@ -366,9 +417,7 @@ fun AppearanceSettingsScreen(
                             .height(64.dp)
                             .clip(RoundedCornerShape(32.dp))
                             .clickable {
-                                scope.launch {
-                                    repository.saveAppIcon(icon)
-                                }
+                                pendingIconChange = icon
                             },
                         color = backgroundColor,
                         border = BorderStroke(if (isSelected) 2.dp else 1.dp, if (isSelected) borderColor else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
@@ -389,7 +438,7 @@ fun AppearanceSettingsScreen(
                                     .size(imgSize)
                                     .clip(CircleShape)
                             )
-                            
+
                             if (isSelected) {
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Text(

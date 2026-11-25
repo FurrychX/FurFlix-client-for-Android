@@ -42,11 +42,103 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _submissionDetails = MutableStateFlow<Map<String, Submission>>(emptyMap())
     val submissionDetails: StateFlow<Map<String, Submission>> = _submissionDetails.asStateFlow()
 
+    private val _updateInfo = MutableStateFlow<com.furflix.app.util.UpdateInfo?>(null)
+    val updateInfo: StateFlow<com.furflix.app.util.UpdateInfo?> = _updateInfo.asStateFlow()
+
+    private val _showUpdatePrompt = MutableStateFlow(false)
+    val showUpdatePrompt: StateFlow<Boolean> = _showUpdatePrompt.asStateFlow()
+
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
     private val _isLoadingMore = MutableStateFlow(false)
     val isLoadingMore: StateFlow<Boolean> = _isLoadingMore.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            val update = com.furflix.app.util.GitHubUpdateManager.getInstance(application).checkForUpdates()
+            if (update != null) {
+                _updateInfo.value = update
+                _showUpdatePrompt.value = true
+            }
+        }
+    }
+
+    fun dismissUpdatePrompt() {
+        _showUpdatePrompt.value = false
+    }
+
+    private val _updateDownloadProgress = MutableStateFlow<Float?>(null)
+    val updateDownloadProgress: StateFlow<Float?> = _updateDownloadProgress.asStateFlow()
+
+    fun startUpdateDownload() {
+        val info = _updateInfo.value ?: return
+        val context = getApplication<Application>()
+        val manager = com.furflix.app.util.GitHubUpdateManager.getInstance(context)
+        val downloadId = manager.downloadUpdate(info)
+
+        viewModelScope.launch(Dispatchers.IO) {
+            _updateDownloadProgress.value = 0f
+            val downloadManager = context.getSystemService(android.content.Context.DOWNLOAD_SERVICE) as android.app.DownloadManager
+            var isDownloading = true
+            while (isDownloading) {
+                val query = android.app.DownloadManager.Query().setFilterById(downloadId)
+                val cursor = downloadManager.query(query)
+                if (cursor != null && cursor.moveToFirst()) {
+                    val statusColumn = cursor.getColumnIndex(android.app.DownloadManager.COLUMN_STATUS)
+                    val status = cursor.getInt(statusColumn)
+
+                    if (status == android.app.DownloadManager.STATUS_SUCCESSFUL || status == android.app.DownloadManager.STATUS_FAILED) {
+                        isDownloading = false
+                        _updateDownloadProgress.value = null
+
+                        if (status == android.app.DownloadManager.STATUS_SUCCESSFUL) {
+                            val uri = downloadManager.getUriForDownloadedFile(downloadId)
+                            if (uri != null) {
+                                val intent = android.content.Intent(android.content.Intent.ACTION_VIEW)
+                                intent.setDataAndType(uri, "application/vnd.android.package-archive")
+                                intent.flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
+                                try {
+                                    context.startActivity(intent)
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                }
+                            }
+                        }
+                    } else {
+                        val downloadedColumn = cursor.getColumnIndex(android.app.DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR)
+                        val totalColumn = cursor.getColumnIndex(android.app.DownloadManager.COLUMN_TOTAL_SIZE_BYTES)
+
+                        val downloaded = cursor.getLong(downloadedColumn)
+                        val total = cursor.getLong(totalColumn)
+
+                        if (total > 0) {
+                            _updateDownloadProgress.value = downloaded.toFloat() / total.toFloat()
+                        }
+                    }
+                    cursor.close()
+                } else {
+                    isDownloading = false
+                    _updateDownloadProgress.value = null
+                }
+                if (isDownloading) kotlinx.coroutines.delay(500)
+            }
+        }
+    }
+
+    fun checkForUpdatesManual() {
+        viewModelScope.launch {
+            val update = com.furflix.app.util.GitHubUpdateManager.getInstance(getApplication()).checkForUpdates()
+            if (update != null) {
+                _updateInfo.value = update
+                _showUpdatePrompt.value = true
+            } else {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(getApplication(), getApplication<Application>().getString(com.furflix.app.R.string.update_latest), Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
@@ -170,6 +262,36 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
+
+    private val _needsCloudflareVerification = MutableStateFlow(false)
+    val needsCloudflareVerification: StateFlow<Boolean> = _needsCloudflareVerification.asStateFlow()
+
+    fun onCloudflareVerified(cookies: String) {
+        FurAffinityScraper.mergeCookiesFromWebView(cookies)
+        viewModelScope.launch {
+            if (_isLoggedIn.value) {
+                val merged = FurAffinityScraper.getCookiesString()
+                if (merged.isNotEmpty()) {
+                    repository.saveCookiesFromWebView(merged, _username.value)
+                }
+            }
+            _needsCloudflareVerification.value = false
+            _errorMessage.value = null
+            when (_selectedTab.value) {
+                TAB_BROWSE -> loadBrowse()
+                TAB_LATEST -> loadLatest()
+                TAB_SEARCH -> if (_searchQuery.value.isNotEmpty() || _searchFilters.value.keywords.isNotEmpty()) {
+                    loadSearch(_searchQuery.value)
+                }
+                TAB_WATCHLIST -> loadWatchlist()
+            }
+        }
+    }
+
+    fun dismissCloudflareVerification() {
+        _needsCloudflareVerification.value = false
+        _errorMessage.value = "Cloudflare verification required"
+    }
 
     private val _isLoggedIn = MutableStateFlow(false)
     val isLoggedIn: StateFlow<Boolean> = _isLoggedIn.asStateFlow()
@@ -311,6 +433,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 val result = repository.getBrowse(browsePage, _searchFilters.value)
                 _browseSubmissions.value = result
                 // Do not set errorMessage when empty — can happen briefly on startup
+            } catch (e: com.furflix.app.data.remote.CloudflareChallengeException) {
+                _needsCloudflareVerification.value = true
             } catch (e: Exception) {
                 _errorMessage.value = "Error: ${e.message}"
             }
@@ -328,6 +452,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 val result = repository.getLatest(latestPage)
                 _latestSubmissions.value = result
                 // Do not set errorMessage when empty
+            } catch (e: com.furflix.app.data.remote.CloudflareChallengeException) {
+                _needsCloudflareVerification.value = true
             } catch (e: Exception) {
                 _errorMessage.value = "Error: ${e.message}"
             }
@@ -366,6 +492,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 if (result.isEmpty()) {
                     _errorMessage.value = "No search results found."
                 }
+            } catch (e: com.furflix.app.data.remote.CloudflareChallengeException) {
+                _needsCloudflareVerification.value = true
             } catch (e: Exception) {
                 _errorMessage.value = "Error: ${e.message}"
             }
@@ -385,6 +513,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 if (result.isEmpty()) {
                     _errorMessage.value = "Watchlist is empty or login required."
                 }
+            } catch (e: com.furflix.app.data.remote.CloudflareChallengeException) {
+                _needsCloudflareVerification.value = true
             } catch (e: Exception) {
                 _errorMessage.value = "Error: ${e.message}. You may need to log in."
             }
@@ -444,6 +574,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         }
                     }
                 }
+            } catch (e: com.furflix.app.data.remote.CloudflareChallengeException) {
+                when (_selectedTab.value) {
+                    TAB_BROWSE -> browsePage--
+                    TAB_LATEST -> latestPage--
+                    TAB_SEARCH -> searchPage--
+                }
+                _needsCloudflareVerification.value = true
             } catch (e: Exception) {
                 when (_selectedTab.value) {
                     TAB_BROWSE -> browsePage--
@@ -472,6 +609,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 } else {
                     _errorMessage.value = "Failed to load submission details."
                 }
+            } catch (e: com.furflix.app.data.remote.CloudflareChallengeException) {
+                _needsCloudflareVerification.value = true
             } catch (e: Exception) {
                 _errorMessage.value = e.message ?: "An error occurred"
             } finally {

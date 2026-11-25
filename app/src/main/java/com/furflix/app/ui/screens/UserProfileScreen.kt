@@ -175,13 +175,14 @@ fun UserProfileScreen(
         modifier = Modifier
             .fillMaxSize()
             .navigationBarsPadding()
+            .widthIn(max = 2000.dp)
             .pointerInput(selectedTab) {
                 var accumulatedDrag = 0f
                 detectHorizontalDragGestures(
                     onDragEnd = {
-                        if (accumulatedDrag > 60f) {
+                        if (accumulatedDrag > 150f) {
                             selectTab((selectedTab - 1).coerceAtLeast(0), fromBottom = false)
-                        } else if (accumulatedDrag < -60f) {
+                        } else if (accumulatedDrag < -150f) {
                             selectTab((selectedTab + 1).coerceAtMost(3), fromBottom = false)
                         }
                         accumulatedDrag = 0f

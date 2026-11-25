@@ -75,6 +75,8 @@ import android.widget.Toast
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import com.furflix.app.ui.components.ZoomableImageViewer
+import com.furflix.app.ui.components.ImageProgressTracker
+import androidx.compose.ui.draw.blur
 import com.furflix.app.ui.theme.*
 import com.furflix.app.viewmodel.MainViewModel
 import dev.chrisbanes.haze.HazeState
@@ -145,29 +147,34 @@ fun PostDetailScreen(
             }
         }
 
-        Box(modifier = Modifier.fillMaxSize().navigationBarsPadding()) {
+        Box(modifier = Modifier.fillMaxSize().navigationBarsPadding().widthIn(max = 2000.dp)) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .hazeSource(state = hazeState)
             ) {
 
-                if (isLoading && submission == null) {
+                val listSub = effectiveSubmissions.getOrNull(page)
+                val sub = submission ?: listSub
+
+                if (isLoading && sub == null) {
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
                         CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                     }
-                } else if (submission != null) {
-                    val sub = submission
+                } else if (sub != null) {
+                    val isLoadingData = (submission == null)
                     Column(
                         modifier = Modifier
                             .weight(1f)
                             .verticalScroll(scrollState)
                     ) {
+                        val thumbUrl = listSub?.thumbnailUrl?.takeIf { it.isNotEmpty() } ?: sub.thumbnailUrl
+
                         // ── Hero image ──────────────────────────────────────
-                        HeroImage(sub, onImageClick = { showZoom = true })
+                        HeroImage(sub = sub, thumbUrl = thumbUrl, isLoadingData = isLoadingData, onImageClick = { showZoom = true })
 
                         Column(
                             modifier = Modifier.padding(horizontal = 20.dp)
@@ -381,7 +388,7 @@ fun PostDetailScreen(
             // Full-screen zoomable artwork viewer
             if (showZoom && submission?.fullImageUrl?.isNotEmpty() == true) {
                 ZoomableImageViewer(
-                    imageUrl = submission?.fullImageUrl ?: "",
+                    imageUrl = submission.fullImageUrl ?: "",
                     onClose = { showZoom = false }
                 )
             }
@@ -394,74 +401,122 @@ fun PostDetailScreen(
 // -----------------------------------------------------------------------------------------
 
 @Composable
-private fun HeroImage(sub: Submission, onImageClick: () -> Unit = {}) {
-    if (sub.fullImageUrl.isNotEmpty()) {
-        Box(modifier = Modifier.fillMaxWidth()) {
-            SubcomposeAsyncImage(
+private fun HeroImage(sub: Submission, thumbUrl: String, isLoadingData: Boolean, onImageClick: () -> Unit = {}) {
+    val progressMap by ImageProgressTracker.progressMap.collectAsState()
+    val progress = if (sub.fullImageUrl.isNotEmpty()) progressMap[sub.fullImageUrl] ?: 0f else 0f
+
+    var isFullImageLoading by remember(sub.fullImageUrl) { mutableStateOf(sub.fullImageUrl.isNotEmpty()) }
+    var isFullImageError by remember(sub.fullImageUrl) { mutableStateOf(false) }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(bottomStart = 20.dp, bottomEnd = 20.dp))
+            .clickable(enabled = !isLoadingData && sub.fullImageUrl.isNotEmpty(), onClick = onImageClick)
+    ) {
+        // 1. Always render the blurred thumbnail in the background
+        if (thumbUrl.isNotEmpty()) {
+            coil.compose.AsyncImage(
+                model = thumbUrl,
+                contentDescription = null,
+                contentScale = ContentScale.FillWidth,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .blur(16.dp)
+            )
+        }
+
+        // 2. Render the full image on top
+        if (sub.fullImageUrl.isNotEmpty()) {
+            coil.compose.AsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
                     .data(sub.fullImageUrl)
                     .crossfade(300)
                     .build(),
                 imageLoader = ImageLoaderFactory.getInstance(LocalContext.current),
                 contentDescription = sub.title,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(bottomStart = 20.dp, bottomEnd = 20.dp))
-                    .clickable(onClick = onImageClick),
+                modifier = Modifier.fillMaxWidth(),
                 contentScale = ContentScale.FillWidth,
-                loading = {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(4f / 3f)
-                            .background(DarkSurfaceVariant),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(28.dp),
-                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                            strokeWidth = 2.dp
-                        )
-                    }
-                },
-                error = {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(4f / 3f)
-                            .background(DarkSurfaceVariant),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            Icons.Default.BrokenImage,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
-                            modifier = Modifier.size(32.dp)
-                        )
-                    }
+                onState = { state ->
+                    isFullImageLoading = state is coil.compose.AsyncImagePainter.State.Loading
+                    isFullImageError = state is coil.compose.AsyncImagePainter.State.Error
                 }
             )
+        }
 
-            // Gradient fade into background at the bottom
+        // 3. Loader perfectly centered over the outer Box
+        val showLoader = isFullImageLoading || sub.fullImageUrl.isEmpty()
+        if (showLoader || isFullImageError) {
+            val loaderModifier = if (thumbUrl.isNotEmpty()) {
+                Modifier.matchParentSize()
+            } else {
+                Modifier.fillMaxWidth().aspectRatio(4f / 3f)
+            }
+
             Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(60.dp)
-                    .align(Alignment.BottomCenter)
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                Color.Transparent,
-                                DarkBackground.copy(alpha = 0.4f),
-                                DarkBackground
+                modifier = loaderModifier,
+                contentAlignment = Alignment.Center
+            ) {
+                if (showLoader) {
+                    val animatedProgress by androidx.compose.animation.core.animateFloatAsState(
+                        targetValue = progress,
+                        animationSpec = androidx.compose.animation.core.tween(300, easing = androidx.compose.animation.core.LinearEasing),
+                        label = "ImageProgress"
+                    )
+                    Box(contentAlignment = Alignment.Center) {
+                        if (progress > 0f) {
+                            CircularProgressIndicator(
+                                progress = { animatedProgress },
+                                modifier = Modifier.size(56.dp),
+                                color = MaterialTheme.colorScheme.primary,
+                                strokeWidth = 4.dp,
+                                trackColor = DarkSurfaceVariant.copy(alpha = 0.5f)
                             )
+                        } else {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(56.dp),
+                                color = MaterialTheme.colorScheme.primary,
+                                strokeWidth = 4.dp
+                            )
+                        }
+                        Text(
+                            text = if (progress > 0f) "${(animatedProgress * 100).toInt()}%" else "...",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                } else if (isFullImageError) {
+                    Icon(
+                        Icons.Default.BrokenImage,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
+            }
+        }
+
+        // Gradient fade into background at the bottom
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(60.dp)
+                .align(Alignment.BottomCenter)
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            Color.Transparent,
+                            DarkBackground.copy(alpha = 0.4f),
+                            DarkBackground
                         )
                     )
-            )
+                )
+        )
 
-            // Rating badge overlaid on image
-            if (sub.rating.isNotEmpty()) {
-                Surface(
+        // Rating badge overlaid on image
+        if (sub.rating.isNotEmpty()) {
+            Surface(
                     modifier = Modifier
                         .padding(14.dp)
                         .align(Alignment.TopStart),
@@ -501,7 +556,6 @@ private fun HeroImage(sub: Submission, onImageClick: () -> Unit = {}) {
                 )
             }
         }
-    }
 }
 
 // -----------------------------------------------------------------------------------------
@@ -791,7 +845,7 @@ private fun TagsSection(tags: List<String>, onTagClick: (String) -> Unit) {
         )
         Spacer(modifier = Modifier.width(6.dp))
         Text(
-            text = "Теги",
+            text = stringResource(com.furflix.app.R.string.post_detail_tags),
             fontSize = 15.sp,
             fontWeight = FontWeight.SemiBold,
             color = Color.White

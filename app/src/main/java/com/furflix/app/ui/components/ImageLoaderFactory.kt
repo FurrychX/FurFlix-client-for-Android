@@ -60,6 +60,7 @@ object ImageLoaderFactory {
 
                         chain.proceed(finalRequest)
                     }
+                    .addNetworkInterceptor(ProgressInterceptor())
                     .build()
             )
             .diskCache(

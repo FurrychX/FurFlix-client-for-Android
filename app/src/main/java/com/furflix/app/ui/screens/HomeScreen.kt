@@ -9,6 +9,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.FocusRequester
@@ -39,6 +40,10 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.Spring
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -96,7 +101,16 @@ fun HomeScreen(
     val currentSearchQuery by viewModel.searchQuery.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val isLoadingMore by viewModel.isLoadingMore.collectAsState()
+    val isWatchingLoading by watchlistViewModel.isLoading.collectAsState()
+    val searchQuery by viewModel.searchQuery.collectAsState()
+
+    val updateInfo by viewModel.updateInfo.collectAsState()
+    val showUpdatePrompt by viewModel.showUpdatePrompt.collectAsState()
+    val downloadProgress by viewModel.updateDownloadProgress.collectAsState()
+
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val errorMessage by viewModel.errorMessage.collectAsState()
+    val needsCloudflare by viewModel.needsCloudflareVerification.collectAsState()
     val isLoggedIn by viewModel.isLoggedIn.collectAsState()
     val nsfwEnabled by viewModel.nsfwEnabled.collectAsState()
 
@@ -145,6 +159,8 @@ fun HomeScreen(
     }
 
     val gridStates = remember { mutableMapOf<Int, LazyGridState>() }
+    // Hoist search grid state at the top level so it survives back-navigation (fixes scroll-to-top on back)
+    val searchGridState = rememberLazyGridState()
     var profileScrollToTopTrigger by remember { mutableIntStateOf(0) }
 
     val focusManager = LocalFocusManager.current
@@ -249,7 +265,19 @@ fun HomeScreen(
             // Pull-to-refresh
             var isRefreshing by remember { mutableStateOf(false) }
             var pullProgress by remember { mutableFloatStateOf(0f) }
-            val pullThreshold = 330f
+            val pullThreshold = 300f
+            // Rubber-band physics: sqrt gives natural deceleration (like iOS pull-to-refresh)
+            val maxTranslation = 180f
+            val contentTranslationY by animateFloatAsState(
+                targetValue = if (isRefreshing) maxTranslation * 0.65f
+                              else (kotlin.math.sqrt(pullProgress.coerceAtLeast(0f)) * 10f)
+                                  .coerceIn(0f, maxTranslation),
+                animationSpec = if (isRefreshing)
+                    spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMediumLow)
+                else
+                    spring(stiffness = Spring.StiffnessMediumLow, dampingRatio = Spring.DampingRatioNoBouncy),
+                label = "contentTranslationY"
+            )
             var hasTriggered by remember { mutableStateOf(false) }
 
             LaunchedEffect(isLoading, isRefreshing) {
@@ -299,10 +327,47 @@ fun HomeScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .nestedScroll(nestedScrollConnection)
+                    .pointerInput(selectedTab) {
+                        var accumulatedDrag = 0f
+                        detectHorizontalDragGestures(
+                            onDragEnd = {
+                                if (accumulatedDrag > 150f) {
+                                    val prev = (selectedTab - 1).coerceAtLeast(0)
+                                    if (prev != selectedTab) viewModel.setSelectedTab(prev)
+                                } else if (accumulatedDrag < -150f) {
+                                    val next = (selectedTab + 1).coerceAtMost(3)
+                                    if (next != selectedTab) viewModel.setSelectedTab(next)
+                                }
+                                accumulatedDrag = 0f
+                            },
+                            onDragCancel = { accumulatedDrag = 0f }
+                        ) { _, dragAmount ->
+                            accumulatedDrag += dragAmount
+                        }
+                    }
             ) {
+                // Pull indicator sits BEHIND the content, revealed as it slides down
+                if (pullProgress > 0f || isRefreshing) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopCenter)
+                            .padding(top = 8.dp)
+                            .size(72.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        PawPullIndicator(
+                            isRefreshing = isRefreshing,
+                            pullProgress = pullProgress / pullThreshold
+                        )
+                    }
+                }
                 HorizontalPager(
                     state = pagerState,
-                    modifier = Modifier.fillMaxSize().hazeSource(state = hazeState),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .hazeSource(state = hazeState)
+                        .graphicsLayer { translationY = contentTranslationY },
+                    userScrollEnabled = false,
                     beyondViewportPageCount = 1
             ) { page ->
                 when (page) {
@@ -323,14 +388,21 @@ fun HomeScreen(
                                 onLoginSuccess = { viewModel.loadLatest() },
                                 viewModel = viewModel
                             )
-                        } else if (isLoading && submissions.isEmpty()) {
+                        } else if ((isLoading || needsCloudflare) && submissions.isEmpty()) {
                             Box(
                                 modifier = Modifier.fillMaxSize(),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                                    if (!isLoggedIn) {
+                                    if (needsCloudflare) {
+                                        Spacer(modifier = Modifier.height(16.dp))
+                                        Text(
+                                            text = stringResource(R.string.cf_checking),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    } else if (!isLoggedIn) {
                                         Spacer(modifier = Modifier.height(16.dp))
                                         Text(
                                             text = stringResource(R.string.home_not_logged_in),
@@ -362,10 +434,44 @@ fun HomeScreen(
                                     )
                                     Spacer(modifier = Modifier.height(16.dp))
                                     Button(
-                                        onClick = { viewModel.clearError() },
+                                        onClick = {
+                                            viewModel.clearError()
+                                            if (page == 0) viewModel.loadBrowse() else viewModel.loadLatest()
+                                        },
                                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                                     ) {
-                                        Text("OK")
+                                        Text(stringResource(R.string.action_retry))
+                                    }
+                                }
+                            }
+                        } else if (submissions.isEmpty()) {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Icon(
+                                        Icons.Default.CloudOff,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(56.dp),
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                                    )
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                    Text(
+                                        text = stringResource(R.string.home_empty_feed),
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        textAlign = TextAlign.Center,
+                                        modifier = Modifier.padding(horizontal = 32.dp)
+                                    )
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                    Button(
+                                        onClick = {
+                                            if (page == 0) viewModel.loadBrowse() else viewModel.loadLatest()
+                                        },
+                                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                                    ) {
+                                        Text(stringResource(R.string.action_retry))
                                     }
                                 }
                             }
@@ -417,7 +523,6 @@ fun HomeScreen(
                         }
                     }
                     2 -> {
-                        val searchGridState = rememberLazyGridState()
                         var isHeaderVisible by remember { mutableStateOf(true) }
                         
                         LaunchedEffect(searchGridState) {
@@ -429,8 +534,8 @@ fun HomeScreen(
                                         isHeaderVisible = true
                                     } else {
                                         val dy = if (index == prevIndex) offset - prevOffset else if (index > prevIndex) 100 else -100
-                                        if (dy > 15) isHeaderVisible = false
-                                        else if (dy < -15) isHeaderVisible = true
+                                        if (dy > 40) isHeaderVisible = false
+                                        else if (dy < -40) isHeaderVisible = true
                                     }
                                     prevOffset = offset
                                     prevIndex = index
@@ -494,9 +599,14 @@ fun HomeScreen(
                                 
                                 InlineFiltersRow(
                                     filters = draftFilters,
-                                    onFilterChange = { newFilters -> 
+                                    searchQuery = searchQuery,
+                                    onFilterChange = { newFilters ->
                                         draftFilters = newFilters
                                         viewModel.updateSearchFilters(newFilters)
+                                        // Auto-trigger search if there is an active query
+                                        if (searchQuery.isNotEmpty()) {
+                                            viewModel.loadSearch(searchQuery)
+                                        }
                                     }
                                 )
                             }
@@ -722,23 +832,7 @@ fun HomeScreen(
             }
             } // close Box(nestedScroll)
 
-            // Pull indicator overlay — drawn on top of everything
-            if (pullProgress > 0f || isRefreshing) {
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .padding(top = 12.dp)
-                        .size(56.dp)
-                        .clip(RoundedCornerShape(28.dp))
-                        .background(Color.Black.copy(alpha = 0.6f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    PawPullIndicator(
-                        isRefreshing = isRefreshing,
-                        pullProgress = pullProgress / pullThreshold
-                    )
-                }
-            }
+            // Pull indicator is now drawn BEHIND content (see above the HorizontalPager)
 
             // Floating panel sits on top of the content (true overlay, not a Scaffold slot).
             Box(
@@ -783,6 +877,84 @@ fun HomeScreen(
                         }
                     }
                 )
+            }
+        }
+
+        if (needsCloudflare) {
+            com.furflix.app.ui.components.CloudflareVerificationOverlay(
+                onVerified = { cookies -> viewModel.onCloudflareVerified(cookies) },
+                onDismiss = { viewModel.dismissCloudflareVerification() }
+            )
+        }
+
+        if (showUpdatePrompt && updateInfo != null) {
+            ModalBottomSheet(
+                onDismissRequest = { viewModel.dismissUpdatePrompt() },
+                sheetState = sheetState,
+                containerColor = MaterialTheme.colorScheme.surface
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp)
+                ) {
+                    Text(
+                        text = stringResource(R.string.update_available_title),
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "v${updateInfo?.version}",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Markdown or text changelog
+                    Text(
+                        text = updateInfo?.changelog ?: "",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+
+                    Spacer(modifier = Modifier.height(32.dp))
+
+                    val currentProgress = downloadProgress
+                    if (currentProgress != null) {
+                        Text(
+                            text = "${(currentProgress * 100).toInt()}%",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.align(Alignment.End)
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        androidx.compose.material3.LinearProgressIndicator(
+                            progress = { currentProgress },
+                            modifier = Modifier.fillMaxWidth().height(8.dp),
+                            color = MaterialTheme.colorScheme.primary,
+                            trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                            strokeCap = androidx.compose.ui.graphics.StrokeCap.Round
+                        )
+                    } else {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.End
+                        ) {
+                            TextButton(onClick = { viewModel.dismissUpdatePrompt() }) {
+                                Text(stringResource(R.string.update_skip_button))
+                            }
+                            Spacer(modifier = Modifier.width(16.dp))
+                            Button(onClick = {
+                                viewModel.startUpdateDownload()
+                            }) {
+                                Text(stringResource(R.string.update_download_button))
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
             }
         }
     }
@@ -1024,8 +1196,6 @@ fun SearchBar(
             }
         }
     }
-
-
 }
 }
 
@@ -1033,6 +1203,7 @@ fun SearchBar(
 @Composable
 fun InlineFiltersRow(
     filters: com.furflix.app.data.model.SearchFilters,
+    searchQuery: String = "",
     onFilterChange: (com.furflix.app.data.model.SearchFilters) -> Unit
 ) {
     Row(
@@ -1469,4 +1640,3 @@ fun NsfwTogglePill(
         }
     }
 }
-

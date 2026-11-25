@@ -63,7 +63,8 @@ fun SettingsScreen(
     var showDownloadFolderDialog by remember { mutableStateOf(false) }
 
     var showLanguageDialog by remember { mutableStateOf(false) }
-    val currentLanguageCode = androidx.appcompat.app.AppCompatDelegate.getApplicationLocales()[0]?.language ?: "en"
+    val appLocale = androidx.appcompat.app.AppCompatDelegate.getApplicationLocales()[0]?.language
+    val currentLanguageCode = appLocale ?: java.util.Locale.getDefault().language
     val languageNameMap = mapOf("en" to "English", "ru" to "Русский", "uk" to "Українська")
     val currentLanguageName = languageNameMap[currentLanguageCode] ?: "English"
 

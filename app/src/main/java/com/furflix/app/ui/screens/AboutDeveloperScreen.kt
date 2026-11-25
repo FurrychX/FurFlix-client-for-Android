@@ -17,6 +17,8 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -39,7 +41,8 @@ import androidx.core.net.toUri
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AboutDeveloperScreen(
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    viewModel: com.furflix.app.viewmodel.MainViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
 ) {
     val hazeState = remember { HazeState() }
     val context = LocalContext.current
@@ -115,6 +118,44 @@ fun AboutDeveloperScreen(
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
 
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // App Version & Update Check
+            val updateInfo by viewModel.updateInfo.collectAsState()
+
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                color = DarkSurfaceVariant,
+                onClick = { viewModel.checkForUpdatesManual() }
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.SystemUpdate, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(stringResource(R.string.update_check_button), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
+                            if (updateInfo != null) {
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .size(8.dp)
+                                        .clip(CircleShape)
+                                        .background(androidx.compose.ui.graphics.Color.Green)
+                                )
+                            }
+                        }
+
+                        val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
+                        val currentVersion = packageInfo.versionName ?: ""
+                        Text("v$currentVersion", style = MaterialTheme.typography.bodySmall, color = SubtleGray)
+                    }
+                }
+            }
+
             Spacer(modifier = Modifier.height(32.dp))
             
             // Socials
@@ -135,7 +176,7 @@ fun AboutDeveloperScreen(
                     label = stringResource(R.string.about_telegram),
                     modifier = Modifier.weight(1f),
                     onClick = { 
-                        val intent = Intent(Intent.ACTION_VIEW, "https://t.me/PavelWork_HR".toUri())
+                        val intent = Intent(Intent.ACTION_VIEW, "https://t.me/PavelFurrych".toUri())
                         context.startActivity(intent)
                     }
                 )
@@ -149,6 +190,16 @@ fun AboutDeveloperScreen(
                     }
                 )
             }
+            Spacer(modifier = Modifier.height(12.dp))
+            SocialButton(
+                icon = Icons.Default.Chat, // Proxy for Discord
+                label = "Discord",
+                modifier = Modifier.fillMaxWidth(),
+                onClick = {
+                    val intent = Intent(Intent.ACTION_VIEW, "https://discord.com/users/215532818204196884".toUri())
+                    context.startActivity(intent)
+                }
+            )
 
             Spacer(modifier = Modifier.height(32.dp))
 
@@ -162,30 +213,53 @@ fun AboutDeveloperScreen(
             )
             Spacer(modifier = Modifier.height(12.dp))
 
-            val monobankCardNumber = stringResource(R.string.about_card_monobank_number)
-            DonationCard(
-                icon = Icons.Default.CreditCard,
-                title = stringResource(R.string.about_card_monobank),
-                subtitle = "${stringResource(R.string.about_card_monobank_sub)}\n$monobankCardNumber",
-                buttonText = stringResource(R.string.about_btn_donate),
+            SocialButton(
+                icon = Icons.Default.Savings, // Savings (piggy bank/jar)
+                label = "Monobank Банка",
+                modifier = Modifier.fillMaxWidth(),
                 onClick = {
                     val intent = Intent(Intent.ACTION_VIEW, "https://send.monobank.ua/jar/31dqVo9pHr".toUri())
                     context.startActivity(intent)
-                },
-                secondaryIcon = Icons.Default.ContentCopy,
-                onSecondaryClick = {
-                    copyToClipboard(monobankCardNumber, "Card Number")
                 }
             )
 
             Spacer(modifier = Modifier.height(12.dp))
 
+            val monobankCardNumber = stringResource(R.string.about_card_monobank_number)
             DonationCard(
-                icon = Icons.Default.CurrencyExchange, // Using CurrencyExchange for Tether/Crypto generic
+                icon = Icons.Default.CreditCard,
+                title = "Monobank (UAH)",
+                subtitle = monobankCardNumber,
+                onCopyClick = { copyToClipboard(monobankCardNumber, "Card Number") }
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            val monobankUsdNumber = "4874 1000 8642 3608"
+            DonationCard(
+                icon = Icons.Default.CreditCard,
+                title = "Visa / Mastercard (USD)",
+                subtitle = monobankUsdNumber,
+                onCopyClick = { copyToClipboard(monobankUsdNumber, "Card Number") }
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            val monobankEurNumber = "4441 1144 9001 3347"
+            DonationCard(
+                icon = Icons.Default.CreditCard,
+                title = "Visa / Mastercard (EUR)",
+                subtitle = monobankEurNumber,
+                onCopyClick = { copyToClipboard(monobankEurNumber, "Card Number") }
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            DonationCard(
+                icon = Icons.Default.CurrencyExchange,
                 title = "USDT (TRC20)",
                 subtitle = "TVX7biFztNzd2P85y8iDGTN6uLyuduGEj7",
-                buttonText = stringResource(R.string.about_btn_copy),
-                onClick = { copyToClipboard("TVX7biFztNzd2P85y8iDGTN6uLyuduGEj7", "USDT Address") }
+                onCopyClick = { copyToClipboard("TVX7biFztNzd2P85y8iDGTN6uLyuduGEj7", "USDT Address") }
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -194,8 +268,7 @@ fun AboutDeveloperScreen(
                 icon = Icons.Default.CurrencyBitcoin,
                 title = "Bitcoin (BTC)",
                 subtitle = "12mRZTgc1dPr8iqPmzuwszKK7Ee9uQafwX",
-                buttonText = stringResource(R.string.about_btn_copy),
-                onClick = { copyToClipboard("12mRZTgc1dPr8iqPmzuwszKK7Ee9uQafwX", "BTC Address") }
+                onCopyClick = { copyToClipboard("12mRZTgc1dPr8iqPmzuwszKK7Ee9uQafwX", "BTC Address") }
             )
 
             Spacer(modifier = Modifier.height(48.dp))
@@ -232,10 +305,7 @@ fun DonationCard(
     icon: ImageVector,
     title: String,
     subtitle: String,
-    buttonText: String,
-    onClick: () -> Unit,
-    secondaryIcon: ImageVector? = null,
-    onSecondaryClick: (() -> Unit)? = null
+    onCopyClick: () -> Unit
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -257,30 +327,13 @@ fun DonationCard(
             }
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
                 Text(subtitle, style = MaterialTheme.typography.bodySmall, color = SubtleGray)
             }
             Spacer(modifier = Modifier.width(16.dp))
             
-            if (secondaryIcon != null && onSecondaryClick != null) {
-                IconButton(onClick = onSecondaryClick, modifier = Modifier.size(32.dp)) {
-                    Icon(secondaryIcon, contentDescription = "Copy", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
-                }
-                Spacer(modifier = Modifier.width(8.dp))
-            }
-
-            Surface(
-                shape = RoundedCornerShape(12.dp),
-                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
-                onClick = onClick
-            ) {
-                Text(
-                    text = buttonText,
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
-                )
+            IconButton(onClick = onCopyClick, modifier = Modifier.size(32.dp)) {
+                Icon(Icons.Default.ContentCopy, contentDescription = "Copy", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
             }
         }
     }

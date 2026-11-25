@@ -22,11 +22,8 @@ import com.furflix.app.ui.components.ImageLoaderFactory
 import com.furflix.app.ui.navigation.FurFlixNavGraph
 import com.furflix.app.ui.screens.SplashScreen
 import com.furflix.app.ui.theme.FurFlixTheme
-import com.furflix.app.ui.theme.AppIcon
-import com.furflix.app.utils.IconManager
 
 class MainActivity : AppCompatActivity() {
-    private var pendingAppIcon: AppIcon? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
@@ -48,11 +45,6 @@ class MainActivity : AppCompatActivity() {
         setContent {
             val repository = remember { com.furflix.app.data.repository.FurRepository.getInstance(this) }
             val themePref by repository.themeFlow.collectAsState(initial = com.furflix.app.ui.theme.ThemePreference.DEFAULT)
-            val appIcon by repository.appIconFlow.collectAsState(initial = null)
-            
-            if (appIcon != null) {
-                pendingAppIcon = appIcon
-            }
 
             FurFlixTheme(themePreference = themePref) {
                 var showSplash by remember { mutableStateOf(true) }
@@ -68,13 +60,6 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             }
-        }
-    }
-
-    override fun onStop() {
-        super.onStop()
-        pendingAppIcon?.let { icon ->
-            IconManager.applyPendingIcon(this, icon)
         }
     }
 }

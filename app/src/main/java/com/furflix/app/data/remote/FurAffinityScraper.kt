@@ -16,6 +16,32 @@ import org.jsoup.nodes.Element
 import java.net.URLEncoder
 import java.util.concurrent.TimeUnit
 
+class CloudflareChallengeException(val url: String) : Exception("Cloudflare verification required")
+
+internal object CloudflareDetector {
+    fun isChallenge(
+        code: Int,
+        cfMitigated: String?,
+        cfRay: String?,
+        html: String
+    ): Boolean {
+        if (cfMitigated != null && cfMitigated.equals("challenge", ignoreCase = true)) return true
+        if (code == 403 || code == 503) {
+            if (html.isEmpty() ||
+                html.contains("Just a moment", ignoreCase = true) ||
+                html.contains("cf-challenge", ignoreCase = true) ||
+                html.contains("challenge-platform", ignoreCase = true) ||
+                html.contains("cf_chl_opt", ignoreCase = true) ||
+                cfRay != null
+            ) {
+                return true
+            }
+        }
+        return html.contains("Just a moment...", ignoreCase = true) &&
+            (html.contains("challenge-platform", ignoreCase = true) || html.contains("cf_chl_opt", ignoreCase = true))
+    }
+}
+
 object FurAffinityScraper {
 
     // Session cookies — keyed by name. Real FA auth cookies are named "a" and "b".
@@ -25,7 +51,7 @@ object FurAffinityScraper {
 
     private val cookieManager = CookieManager.getInstance()
 
-    private const val USER_AGENT =
+    const val USER_AGENT =
         "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36"
 
     const val FA_BASE = "https://www.furaffinity.net"
@@ -67,27 +93,58 @@ object FurAffinityScraper {
      * @param forceNsfw if true, injects sfw=0; if false, injects sfw=1; if null, leaves it alone.
      */
     fun getCookiesString(forceNsfw: Boolean? = null): String {
-        val cookies = sessionCookies.toMutableMap()
+        val cookies = mutableMapOf<String, String>()
+
+        // Pull latest cookies from WebView CookieManager (e.g. cf_clearance, __cf_bm)
+        val c1 = cookieManager.getCookie("https://furaffinity.net") ?: ""
+        val c2 = cookieManager.getCookie("https://www.furaffinity.net") ?: ""
+        listOf(c1, c2).filter { it.isNotEmpty() }.forEach { header ->
+            header.split(";").forEach { part ->
+                val kv = part.trim().split("=", limit = 2)
+                if (kv.size == 2) {
+                    val k = kv[0].trim()
+                    val v = kv[1].trim()
+                    if (k.isNotEmpty()) cookies[k] = v
+                }
+            }
+        }
+
+        // Overlay session cookies (preserve fresh cf_clearance from CookieManager if present)
+        val freshCfClearance = cookies["cf_clearance"]
+        sessionCookies.forEach { (k, v) ->
+            if (k != "cf_clearance" || freshCfClearance.isNullOrEmpty()) {
+                cookies[k] = v
+            }
+        }
+
         if (forceNsfw == true) {
             cookies.remove("sfw")
         } else if (forceNsfw == false) {
             cookies["sfw"] = "1"
         }
-        
-        if (cookies.isNotEmpty()) {
-            return cookies.entries.joinToString("; ") { "${it.key}=${it.value}" }
+
+        return cookies.entries.joinToString("; ") { "${it.key}=${it.value}" }
+    }
+
+    /**
+     * Merges fresh cookies from WebView (e.g. after Cloudflare verification) without dropping auth cookies.
+     */
+    fun mergeCookiesFromWebView(cookiesString: String) {
+        cookiesString.split(";").forEach { cookie ->
+            val parts = cookie.trim().split("=", limit = 2)
+            if (parts.size == 2) {
+                val name = parts[0].trim()
+                val value = parts[1].trim()
+                if (name.isNotEmpty()) {
+                    sessionCookies[name] = value
+                }
+            }
         }
-        val c1 = cookieManager.getCookie("https://furaffinity.net") ?: ""
-        val c2 = cookieManager.getCookie("https://www.furaffinity.net") ?: ""
-        
-        var combined = listOf(c1, c2).filter { it.isNotEmpty() }.joinToString("; ")
-        if (forceNsfw == true) {
-            combined = combined.replace(Regex("""sfw=\d+"""), "")
-            combined = combined.replace(Regex(""";\s*;"""), ";").trim(';', ' ')
-        } else if (forceNsfw == false) {
-            combined = combined.replace(Regex("""sfw=\d+"""), "") + "; sfw=1"
+        applySessionCookiesToCookieManager()
+        if (sessionCookies.containsKey("a")) {
+            loggedIn = true
         }
-        return combined
+        Log.d("FurScraper", "Merged cookies: ${sessionCookies.keys}")
     }
 
     /**
@@ -136,6 +193,14 @@ object FurAffinityScraper {
         cookieManager.flush()
     }
 
+    private fun isCloudflareChallenge(response: okhttp3.Response, html: String): Boolean =
+        CloudflareDetector.isChallenge(
+            code = response.code,
+            cfMitigated = response.header("Cf-Mitigated"),
+            cfRay = response.header("CF-RAY"),
+            html = html
+        )
+
         private suspend fun postDocument(url: String, formBody: okhttp3.FormBody, forceNsfw: Boolean? = null): org.jsoup.nodes.Document =
         withContext(Dispatchers.IO) {
             Log.d("FurScraper", "POSTing to: $url")
@@ -158,6 +223,9 @@ object FurAffinityScraper {
             val finalUrl = response.request.url.toString()
 
             Log.d("FurScraper", "POST Status=${response.code}, finalUrl=$finalUrl, len=${html.length}")
+            if (isCloudflareChallenge(response, html)) {
+                throw CloudflareChallengeException(finalUrl)
+            }
             Jsoup.parse(html, finalUrl)
         }
 
@@ -187,6 +255,11 @@ object FurAffinityScraper {
 
             Log.d("FurScraper", "Status=${response.code}, finalUrl=$finalUrl, len=${html.length}")
             if (html.length < 1000) Log.d("FurScraper", "Short HTML: ${html.take(500)}")
+
+            if (isCloudflareChallenge(response, html)) {
+                Log.w("FurScraper", "Cloudflare challenge detected for $url (status=${response.code})")
+                throw CloudflareChallengeException(finalUrl)
+            }
 
             if (finalUrl.contains("/login")) {
                 Log.w("FurScraper", "Redirected to login — session cookie 'a' missing or expired")
@@ -324,6 +397,8 @@ object FurAffinityScraper {
             latestNextUrl = nextButton?.attr("href")?.let { "$FA_BASE$it" }
 
             parseMessageCenterSubmissions(doc)
+        } catch (e: CloudflareChallengeException) {
+            throw e
         } catch (e: Exception) {
             Log.e("FurScraper", "getLatestPage error: ${e.message}", e)
             emptyList()
@@ -343,6 +418,8 @@ object FurAffinityScraper {
             val forceNsfw = filters.ratingAdult || filters.ratingMature
             val doc = fetchDocument(url, forceNsfw)
             parseSearchResults(doc)
+        } catch (e: CloudflareChallengeException) {
+            throw e
         } catch (e: Exception) {
             Log.e("FurScraper", "getBrowsePage error: ${e.message}", e)
             emptyList()
@@ -375,6 +452,8 @@ object FurAffinityScraper {
                 }
                 
                 parseSearchResults(doc)
+            } catch (e: CloudflareChallengeException) {
+                throw e
             } catch (e: Exception) {
                 Log.e("FurScraper", "search error: ${e.message}", e)
                 emptyList()
@@ -386,6 +465,8 @@ object FurAffinityScraper {
             try {
                 val doc = fetchDocument("$FA_BASE/view/$submissionId/")
                 parseSubmissionDetail(doc, submissionId)
+            } catch (e: CloudflareChallengeException) {
+                throw e
             } catch (e: Exception) {
                 Log.e("FurScraper", "getSubmissionDetails error: ${e.message}", e)
                 null
@@ -401,6 +482,8 @@ object FurAffinityScraper {
             watchlistNextUrl = nextButton?.attr("href")?.let { "$FA_BASE$it" }
 
             parseMessageCenterSubmissions(doc)
+        } catch (e: CloudflareChallengeException) {
+            throw e
         } catch (e: Exception) {
             Log.e("FurScraper", "getWatchlistPage error: ${e.message}", e)
             emptyList()
