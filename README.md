@@ -1,7 +1,7 @@
-# FurFlix
+# FurFlix — FurAffinity client for Android
 
 <p align="center">
-  <a href="https://furrychx.github.io/FurFlix-client-for-Android/">🌐 Official Website</a>
+  <a href="https://furrychx.github.io/FurFlix-client-for-Android/">Official website</a> · <a href="https://github.com/FurrychX/FurFlix-client-for-Android/releases/latest">Download APK</a>
 </p>
 
 <p align="center">
@@ -15,10 +15,6 @@
 </p>
 
 <p align="center"><a href="README.md">English</a> · <a href="README_RU.md">Русский</a> · <a href="README_UA.md">Українська</a></p>
-
-<p align="center">
-  <sub><b>Keywords:</b> furaffinity android app · furaffinity client · furaffinity apk · furaffinity mobile · furry android client · furry art viewer android · anthro art viewer</sub>
-</p>
 
 Unofficial FurAffinity client for Android — fast, modern, built with Jetpack Compose.
 
